@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Process Update — PCS CHAMPO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root {
+    --bg:#0A0C10; --bg2:#111318; --bg3:#181C24; --bg4:#1E2330;
+    --border:#232836; --border2:#2E3547;
+    --text:#ECF0F8; --muted:#4E5A72; --muted2:#6B7A96;
+    --accent:#5B8FF9; --green:#27D98A; --red:#F05C5C; --amber:#F5A623; --purple:#9B7FE8;
+    --mono:'Space Mono',monospace; --sans:'DM Sans',sans-serif;
+    --r:12px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--sans);
+    min-height:100vh; min-height:100dvh; overflow-x:hidden;
+  }
+
+  /* ── NOISE TEXTURE ── */
+  body::after{
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:0.025;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  }
+
+  /* ── AUTH ── */
+  .auth{
+    position:fixed; inset:0; background:var(--bg); z-index:200;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:24px; gap:20px;
+  }
+  .auth.gone{display:none}
+  .auth-badge{
+    font-family:var(--mono); font-size:9px; letter-spacing:0.25em; color:var(--accent);
+    text-transform:uppercase; padding:5px 12px; border:1px solid rgba(91,143,249,0.3);
+    border-radius:20px; background:rgba(91,143,249,0.06);
+  }
+  .auth-logo{font-family:var(--mono); font-size:26px; font-weight:700; letter-spacing:-0.02em}
+  .auth-logo b{color:var(--accent)}
+  .auth-sub{font-size:13px; color:var(--muted2); text-align:center; max-width:300px; line-height:1.6}
+  .auth-card{
+    background:var(--bg2); border:1px solid var(--border); border-radius:16px;
+    padding:28px 22px; width:100%; max-width:380px; display:flex; flex-direction:column; gap:14px;
+  }
+  .g-btn{
+    width:100%; padding:14px 16px; background:#fff; border:none; border-radius:10px;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    font-family:var(--sans); font-size:15px; font-weight:600; color:#1a1a1a;
+    cursor:pointer; transition:all 0.2s; box-shadow:0 2px 8px rgba(0,0,0,0.3);
+  }
+  .g-btn:hover{transform:translateY(-1px); box-shadow:0 4px 16px rgba(0,0,0,0.4)}
+  .g-btn:active{transform:scale(0.98)}
+  .auth-note{
+    font-size:10px; color:var(--muted); text-align:center; line-height:1.6;
+    padding:10px 12px; background:rgba(245,166,35,0.06); border:1px solid rgba(245,166,35,0.18);
+    border-radius:8px;
+  }
+  .auth-note strong{color:var(--amber)}
+
+  /* ── HEADER ── */
+  .header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(10,12,16,0.92); backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border);
+    padding:12px 16px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .header-left{display:flex; flex-direction:column; gap:1px}
+  .header-tag{font-family:var(--mono); font-size:8px; letter-spacing:0.2em; color:var(--accent); text-transform:uppercase}
+  .header-title{font-family:var(--mono); font-size:14px; font-weight:700}
+  .header-title b{color:var(--accent)}
+  .user-pill{
+    display:flex; align-items:center; gap:6px;
+    background:rgba(39,217,138,0.08); border:1px solid rgba(39,217,138,0.2);
+    border-radius:20px; padding:5px 10px 5px 6px;
+    font-size:11px; color:var(--green); cursor:pointer;
+  }
+  .user-pill.gone{display:none}
+  .user-pill img{width:18px; height:18px; border-radius:50%}
+
+  /* ── WRAP ── */
+  .wrap{
+    position:relative; z-index:1;
+    max-width:480px; margin:0 auto;
+    padding:16px 14px 100px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+
+  /* ── STEP INDICATOR ── */
+  .steps{display:flex; align-items:center; gap:0; margin-bottom:4px}
+  .step-item{display:flex; flex-direction:column; align-items:center; gap:4px; flex:1}
+  .step-dot{
+    width:28px; height:28px; border-radius:50%; border:2px solid var(--border2);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-size:10px; color:var(--muted); transition:all 0.3s;
+  }
+  .step-dot.active{border-color:var(--accent); color:var(--accent); background:rgba(91,143,249,0.12)}
+  .step-dot.done{border-color:var(--green); background:var(--green); color:#000}
+  .step-label{font-family:var(--mono); font-size:8px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; text-align:center}
+  .step-line{flex:1; height:1px; background:var(--border2); margin-bottom:20px}
+  .step-line.done{background:var(--green)}
+
+  /* ── SECTION LABEL ── */
+  .slabel{
+    font-family:var(--mono); font-size:9px; letter-spacing:0.18em;
+    color:var(--muted); text-transform:uppercase; padding:0 2px;
+  }
+
+  /* ── CARD ── */
+  .card{background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); overflow:hidden}
+  .card.highlight{border-color:rgba(91,143,249,0.35); background:rgba(91,143,249,0.04)}
+
+  /* ── FIELD ROW ── */
+  .frow{
+    display:flex; align-items:center; padding:0 14px; min-height:52px;
+    border-bottom:1px solid var(--border); gap:10px; position:relative;
+  }
+  .frow:last-child{border-bottom:none}
+  .frow.disabled{opacity:0.4; pointer-events:none}
+  .ficon{font-size:16px; flex-shrink:0; width:24px; text-align:center}
+  .fcontent{flex:1; display:flex; flex-direction:column; gap:2px; min-width:0}
+  .flabel{font-size:9px; font-family:var(--mono); color:var(--muted); letter-spacing:0.1em; text-transform:uppercase}
+  .fval{font-size:14px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .fval.ph{color:var(--muted); font-weight:400; font-size:13px}
+  .farrow{font-size:10px; color:var(--muted2); flex-shrink:0}
+  select.ns,input[type="date"].nd{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;font-size:16px}
+  select.ns:disabled,input[type="date"].nd:disabled{cursor:not-allowed}
+
+  /* ── YES/NO TOGGLE ── */
+  .toggle-row{padding:14px; border-bottom:1px solid var(--border)}
+  .toggle-row:last-child{border-bottom:none}
+  .toggle-label{font-size:9px; font-family:var(--mono); color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:10px}
+  .toggle-q{font-size:14px; font-weight:500; color:var(--text); margin-bottom:12px; line-height:1.4}
+  .toggle-opts{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+  .topt{
+    padding:13px 10px; border-radius:8px; border:2px solid var(--border2);
+    text-align:center; cursor:pointer; transition:all 0.2s;
+    font-family:var(--mono); font-size:11px; letter-spacing:0.08em; color:var(--muted2);
+  }
+  .topt:active{transform:scale(0.97)}
+  .topt.sel-yes{border-color:var(--green); background:rgba(39,217,138,0.1); color:var(--green)}
+  .topt.sel-no {border-color:var(--red);   background:rgba(240,92,92,0.1);   color:var(--red)}
+
+  /* ── DATE SECTION ── */
+  .date-wrap{display:flex; flex-direction:column; gap:10px}
+  .date-quick{display:flex; gap:6px; flex-wrap:wrap; padding:0 2px}
+  .dq{
+    font-family:var(--mono); font-size:10px; padding:6px 12px;
+    background:var(--bg3); border:1px solid var(--border); border-radius:6px;
+    color:var(--muted2); cursor:pointer; transition:all 0.15s;
+  }
+  .dq:active{transform:scale(0.95)}
+  .dq.active{background:rgba(91,143,249,0.15); border-color:var(--accent); color:var(--accent)}
+  .dq.disabled{opacity:0.3; pointer-events:none}
+
+  /* ── REASON CHIPS ── */
+  .chips{display:flex; flex-wrap:wrap; gap:6px; padding:12px 14px}
+  .chip{
+    padding:7px 12px; border-radius:20px; border:1px solid var(--border2);
+    font-size:12px; color:var(--muted2); cursor:pointer; transition:all 0.15s;
+    background:var(--bg3);
+  }
+  .chip:active{transform:scale(0.96)}
+  .chip.active{border-color:var(--amber); background:rgba(245,166,35,0.1); color:var(--amber)}
+
+  /* ── TEXTAREA ── */
+  .tarea-wrap{padding:12px 14px}
+  .tarea-label{font-size:9px; font-family:var(--mono); color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px}
+  textarea.ta{
+    width:100%; background:transparent; border:none; outline:none;
+    color:var(--text); font-family:var(--sans); font-size:13px;
+    resize:none; min-height:60px; line-height:1.6;
+  }
+  textarea.ta::placeholder{color:var(--muted)}
+
+  /* ── CONFIRMATION CARD ── */
+  .confirm-card{
+    background:rgba(91,143,249,0.06); border:1px solid rgba(91,143,249,0.25);
+    border-radius:var(--r); padding:16px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .confirm-title{font-family:var(--mono); font-size:10px; letter-spacing:0.15em; color:var(--accent); text-transform:uppercase}
+  .confirm-row{display:flex; justify-content:space-between; align-items:flex-start; gap:8px}
+  .confirm-key{font-size:11px; color:var(--muted2)}
+  .confirm-val{font-size:12px; font-weight:600; color:var(--text); text-align:right; max-width:60%}
+  .confirm-sep{height:1px; background:rgba(91,143,249,0.15)}
+  .late-flag{
+    display:flex; align-items:center; gap:6px; padding:8px 10px;
+    background:rgba(240,92,92,0.08); border:1px solid rgba(240,92,92,0.25); border-radius:6px;
+    font-size:11px; color:var(--red);
+  }
+
+  /* ── SUBMIT BTN ── */
+  .submit-wrap{
+    position:fixed; bottom:0; left:0; right:0;
+    padding:10px 14px; padding-bottom:max(18px,env(safe-area-inset-bottom));
+    background:linear-gradient(transparent, var(--bg) 30%); z-index:50;
+  }
+  .submit-btn{
+    width:100%; max-width:480px; margin:0 auto; display:block;
+    padding:16px; background:var(--accent); border:none; border-radius:12px;
+    color:#fff; font-family:var(--mono); font-size:12px; font-weight:700;
+    letter-spacing:0.1em; cursor:pointer; transition:all 0.2s;
+    box-shadow:0 4px 20px rgba(91,143,249,0.3);
+  }
+  .submit-btn:hover{opacity:0.9}
+  .submit-btn:active{transform:scale(0.98)}
+  .submit-btn:disabled{background:var(--bg3); color:var(--muted); box-shadow:none; cursor:not-allowed}
+  .submit-btn.loading{background:var(--amber)}
+  .submit-btn.ok{background:var(--green)}
+  .submit-btn.fail{background:var(--red)}
+
+  /* ── SUCCESS SCREEN ── */
+  .success-screen{
+    position:fixed; inset:0; background:var(--bg); z-index:100;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:24px; gap:16px; text-align:center;
+  }
+  .success-screen.gone{display:none}
+  .success-icon{font-size:56px; animation:pop 0.4s cubic-bezier(0.34,1.56,0.64,1)}
+  @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+  .success-title{font-family:var(--mono); font-size:18px; font-weight:700; color:var(--green)}
+  .success-sub{font-size:13px; color:var(--muted2); line-height:1.6; max-width:300px}
+  .success-detail{
+    background:var(--bg2); border:1px solid var(--border); border-radius:10px;
+    padding:14px 18px; width:100%; max-width:360px;
+    font-size:12px; color:var(--muted2); text-align:left; line-height:2;
+  }
+  .success-detail strong{color:var(--text)}
+  .new-entry-btn{
+    margin-top:8px; padding:13px 28px; background:var(--bg3);
+    border:1px solid var(--border2); border-radius:10px;
+    font-family:var(--mono); font-size:11px; color:var(--muted2);
+    cursor:pointer; letter-spacing:0.08em; transition:all 0.2s;
+  }
+  .new-entry-btn:hover{border-color:var(--accent); color:var(--accent)}
+
+  /* ── TOAST ── */
+  .toast{
+    position:fixed; top:64px; left:50%; transform:translateX(-50%) translateY(-12px);
+    background:var(--bg3); border:1px solid var(--border); border-radius:8px;
+    padding:9px 16px; font-family:var(--mono); font-size:11px;
+    opacity:0; transition:all 0.25s; z-index:300; white-space:nowrap; pointer-events:none;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  .toast.ok {border-color:var(--green); color:var(--green); background:rgba(39,217,138,0.08)}
+  .toast.err{border-color:var(--red);   color:var(--red);   background:rgba(240,92,92,0.08)}
+  .toast.warn{border-color:var(--amber); color:var(--amber); background:rgba(245,166,35,0.08)}
+
+  /* ── HIDDEN ── */
+  .hidden{display:none!important}
+
+  @media(max-width:360px){
+    .fval{font-size:13px} .header-title{font-size:13px}
+    .topt{font-size:10px; padding:11px 8px}
+  }
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div class="auth" id="auth">
+  <div class="auth-badge">Process Owner Portal</div>
+  <div class="auth-logo">PCS <b>CHAMPO</b></div>
+  <div class="auth-sub">Sign in with your Google account to submit process updates</div>
+  <div class="auth-card">
+    <button class="g-btn" onclick="startAuth()">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/></svg>
+      Sign in with Google
+    </button>
+    <div class="auth-note">
+      Google may show <strong>"unverified app"</strong> — click <strong>Advanced → Go to site</strong> to proceed. This is your company's internal tool.
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS SCREEN -->
+<div class="success-screen gone" id="success-screen">
+  <div class="success-icon">✅</div>
+  <div class="success-title">UPDATE SUBMITTED</div>
+  <div class="success-sub">Your update has been recorded in the production sheet.</div>
+  <div class="success-detail" id="success-detail"></div>
+  <button class="new-entry-btn" onclick="resetAll()">+ SUBMIT ANOTHER UPDATE</button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-tag">Owner Portal</div>
+    <div class="header-title">PCS <b>CHAMPO</b></div>
+  </div>
+  <div class="user-pill gone" id="user-pill" onclick="signOut()">
+    <img id="u-pic" src="" alt="">
+    <span id="u-name">—</span>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="wrap">
+
+  <!-- STEP INDICATOR -->
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-dot active" id="sdot-1">1</div>
+      <div class="step-label">Who</div>
+    </div>
+    <div class="step-line" id="sline-1"></div>
+    <div class="step-item">
+      <div class="step-dot" id="sdot-2">2</div>
+      <div class="step-label">What</div>
+    </div>
+    <div class="step-line" id="sline-2"></div>
+    <div class="step-item">
+      <div class="step-dot" id="sdot-3">3</div>
+      <div class="step-label">Status</div>
+    </div>
+    <div class="step-line" id="sline-3"></div>
+    <div class="step-item">
+      <div class="step-dot" id="sdot-4">4</div>
+      <div class="step-label">Confirm</div>
+    </div>
+  </div>
+
+  <!-- STEP 1: WHO -->
+  <div id="step1">
+    <div class="slabel" style="margin-bottom:8px">Step 1 — Identify yourself</div>
+    <div class="card">
+      <div class="frow">
+        <div class="ficon">👤</div>
+        <div class="fcontent">
+          <div class="flabel">Your Name</div>
+          <div class="fval ph" id="v-owner">Loading...</div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="ficon">📧</div>
+        <div class="fcontent">
+          <div class="flabel">Google Account</div>
+          <div class="fval ph" id="v-email">—</div>
+        </div>
+      </div>
+    </div>
+    <div id="owner-unrecognised" class="hidden" style="margin-top:8px">
+      <div class="card" style="border-color:rgba(240,92,92,0.3)">
+        <div class="frow">
+          <div class="ficon">⚠️</div>
+          <div class="fcontent">
+            <div class="flabel">Not Recognised</div>
+            <div class="fval" style="color:var(--red);font-size:12px">Your Google account is not linked to any process owner. Contact your manager.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: WHICH PO + PROCESS -->
+  <div id="step2" class="hidden">
+    <div class="slabel" style="margin-bottom:8px">Step 2 — Select PO & Process</div>
+    <div class="card">
+      <div class="frow">
+        <div class="ficon">📦</div>
+        <div class="fcontent">
+          <div class="flabel">Purchase Order</div>
+          <div class="fval ph" id="v-po">Tap to select</div>
+        </div>
+        <div class="farrow">▼</div>
+        <select class="ns" id="sel-po" onchange="onPO()"><option value="">Select PO...</option></select>
+      </div>
+      <div class="frow" id="frow-sku">
+        <div class="ficon">🏷</div>
+        <div class="fcontent">
+          <div class="flabel">SKU / Item</div>
+          <div class="fval ph" id="v-sku">—</div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="ficon">⚙️</div>
+        <div class="fcontent">
+          <div class="flabel">Process</div>
+          <div class="fval ph" id="v-proc">Select PO first</div>
+        </div>
+        <div class="farrow">▼</div>
+        <select class="ns" id="sel-proc" onchange="onProc()" disabled><option value="">Select process...</option></select>
+      </div>
+      <div class="frow" id="frow-planned">
+        <div class="ficon">📅</div>
+        <div class="fcontent">
+          <div class="flabel">Committed Date</div>
+          <div class="fval ph" id="v-planned">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: STATUS -->
+  <div id="step3" class="hidden">
+    <div class="slabel" style="margin-bottom:8px">Step 3 — Update status</div>
+
+    <!-- Complete toggle -->
+    <div class="card">
+      <div class="toggle-row">
+        <div class="toggle-label">Completion Status</div>
+        <div class="toggle-q" id="complete-q">Is this process complete?</div>
+        <div class="toggle-opts">
+          <div class="topt" id="opt-yes" onclick="setComplete(true)">✓ YES, DONE</div>
+          <div class="topt" id="opt-no"  onclick="setComplete(false)">✗ NOT YET</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IF COMPLETE: actual date -->
+    <div id="complete-section" class="hidden">
+      <div class="slabel" style="margin:10px 0 8px">When was it completed?</div>
+      <div class="date-quick" id="dq-complete">
+        <button class="dq" onclick="setActualQuick(0)">Today</button>
+        <button class="dq" onclick="setActualQuick(-1)">Yesterday</button>
+        <button class="dq" onclick="setActualQuick(-2)">2 days ago</button>
+        <button class="dq" onclick="setActualQuick(-3)">3 days ago</button>
+      </div>
+      <div class="card" style="margin-top:8px">
+        <div class="frow">
+          <div class="ficon">✅</div>
+          <div class="fcontent">
+            <div class="flabel">Actual Completion Date</div>
+            <div class="fval ph" id="v-actual">Tap to pick</div>
+          </div>
+          <div class="farrow">▼</div>
+          <input type="date" class="nd" id="sel-actual" onchange="onActual()" />
+        </div>
+      </div>
+      <!-- Late flag shown dynamically -->
+      <div id="late-flag" class="hidden" style="margin-top:8px">
+        <div class="late-flag">
+          <span>⚠️</span>
+          <span id="late-msg">Completed late — delay will be recorded automatically</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- IF NOT COMPLETE: revised date + reason -->
+    <div id="notcomplete-section" class="hidden">
+      <div class="slabel" style="margin:10px 0 8px">New commitment date</div>
+      <div class="date-quick" id="dq-revised">
+        <button class="dq" onclick="setRevisedQuick(1)">Tomorrow</button>
+        <button class="dq" onclick="setRevisedQuick(3)">+3 days</button>
+        <button class="dq" onclick="setRevisedQuick(5)">+5 days</button>
+        <button class="dq" onclick="setRevisedQuick(7)">+1 week</button>
+        <button class="dq" onclick="setRevisedQuick(10)">+10 days</button>
+        <button class="dq" onclick="setRevisedQuick(14)">+2 weeks</button>
+      </div>
+      <div class="card" style="margin-top:8px">
+        <div class="frow">
+          <div class="ficon">📅</div>
+          <div class="fcontent">
+            <div class="flabel">Revised Planned Date</div>
+            <div class="fval ph" id="v-revised">Must be today or later</div>
+          </div>
+          <div class="farrow">▼</div>
+          <input type="date" class="nd" id="sel-revised" onchange="onRevised()" />
+        </div>
+      </div>
+
+      <div class="slabel" style="margin:10px 0 8px">Reason for delay</div>
+      <div class="card">
+        <div class="chips">
+          <div class="chip" onclick="toggleReason(this,'Material not available')">Material not available</div>
+          <div class="chip" onclick="toggleReason(this,'Production capacity')">Production capacity</div>
+          <div class="chip" onclick="toggleReason(this,'Quality issue')">Quality issue</div>
+          <div class="chip" onclick="toggleReason(this,'Machine breakdown')">Machine breakdown</div>
+          <div class="chip" onclick="toggleReason(this,'Power/utility issue')">Power / utility issue</div>
+          <div class="chip" onclick="toggleReason(this,'Labour shortage')">Labour shortage</div>
+          <div class="chip" onclick="toggleReason(this,'Design change')">Design change</div>
+          <div class="chip" onclick="toggleReason(this,'Waiting on upstream')">Waiting on upstream</div>
+          <div class="chip" onclick="toggleReason(this,'Other')">Other</div>
+        </div>
+        <div class="tarea-wrap" style="border-top:1px solid var(--border)">
+          <div class="tarea-label">Additional notes (optional)</div>
+          <textarea class="ta" id="ta-reason" placeholder="Anything else the supervisor should know..."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: CONFIRM -->
+  <div id="step4" class="hidden">
+    <div class="slabel" style="margin-bottom:8px">Step 4 — Confirm & submit</div>
+    <div class="confirm-card" id="confirm-card">
+      <div class="confirm-title">Review before submitting</div>
+      <div class="confirm-row"><span class="confirm-key">Owner</span><span class="confirm-val" id="cf-owner">—</span></div>
+      <div class="confirm-sep"></div>
+      <div class="confirm-row"><span class="confirm-key">PO</span><span class="confirm-val" id="cf-po">—</span></div>
+      <div class="confirm-row"><span class="confirm-key">Process</span><span class="confirm-val" id="cf-proc">—</span></div>
+      <div class="confirm-row"><span class="confirm-key">Original planned</span><span class="confirm-val" id="cf-planned">—</span></div>
+      <div class="confirm-sep"></div>
+      <div class="confirm-row"><span class="confirm-key">Status</span><span class="confirm-val" id="cf-status">—</span></div>
+      <div class="confirm-row" id="cf-date-row"><span class="confirm-key" id="cf-date-label">Date</span><span class="confirm-val" id="cf-date">—</span></div>
+      <div class="confirm-row" id="cf-delay-row" style="display:none"><span class="confirm-key">Delay</span><span class="confirm-val" style="color:var(--red)" id="cf-delay">—</span></div>
+      <div class="confirm-row" id="cf-reason-row" style="display:none"><span class="confirm-key">Reason</span><span class="confirm-val" id="cf-reason">—</span></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SUBMIT BTN -->
+<div class="submit-wrap">
+  <button class="submit-btn" id="submit-btn" onclick="nextStep()" disabled>
+    SELECT PO & PROCESS TO CONTINUE
+  </button>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  CONFIG — same OAuth Client ID as meeting.html
+// ══════════════════════════════════════════════════════════════
+const CLIENT_ID = '255347436727-t4p95ieuscetn5m09geb2d295or1c07n.apps.googleusercontent.com';
+const SCOPE     = 'https://www.googleapis.com/auth/spreadsheets';
+const CFG_KEY   = 'pcs_config';
+const AUTH_KEY  = 'pcs_oauth';
+
+// Owner → email mapping (add all owners here once you have their Gmail)
+// Format: 'gmail@gmail.com': 'Owner Name as in sheet'
+const OWNER_MAP = {
+  'saiyam@champocarpets.com': 'Pawan',   // placeholder — update with real emails
+  // 'miraj@gmail.com': 'Miraj',
+  // 'jitender@gmail.com': 'Jitender',
+  // 'somdutt@gmail.com': 'Somdutt',
+  // 'raj@gmail.com': 'Raj',
+  // 'sufiyan@gmail.com': 'Sufiyan',
+  // 'pardeep@gmail.com': 'Pardeep',
+  // 'imran@gmail.com': 'Imran',
+  // 'baljeet@gmail.com': 'Baljeet',
+  // 'amit@gmail.com': 'Amit',
+};
+
+// ── STATE ──
+let token     = null, tokenExp = 0, gis = null;
+let userEmail = null, ownerName = null;
+let sheetData = [];
+let step      = 1;
+let selPO     = null, selProc = null, selRow = null, selPlanned = null;
+let isComplete = null;
+let actualDate = null, revisedDate = null;
+let delayReason = null;
+
+// ── CLOCK ──
+function cfg(){try{return JSON.parse(localStorage.getItem(CFG_KEY))||{};}catch{return{};}}
+
+// ── GIS ──
+function initGIS(){
+  if(typeof google==='undefined'){setTimeout(initGIS,400);return;}
+  gis=google.accounts.oauth2.initTokenClient({
+    client_id:CLIENT_ID, scope:SCOPE, callback:onToken
+  });
+  const c=cached();
+  if(c){token=c.token;tokenExp=c.exp;onSignedIn(c.user);}
+}
+function startAuth(){
+  if(!gis){toast('Google loading, try again','warn');return;}
+  gis.requestAccessToken({prompt:'consent'});
+}
+function onToken(r){
+  if(r.error){toast('Sign-in failed: '+r.error,'err');return;}
+  token=r.access_token; tokenExp=Date.now()+r.expires_in*1000-60000;
+  fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+token}})
+    .then(x=>x.json()).then(p=>{
+      const u={name:p.given_name||p.name,pic:p.picture,email:p.email};
+      localStorage.setItem(AUTH_KEY,JSON.stringify({token,exp:tokenExp,user:u}));
+      onSignedIn(u);
+    });
+}
+function onSignedIn(u){
+  document.getElementById('auth').classList.add('gone');
+  const pill=document.getElementById('user-pill');
+  pill.classList.remove('gone');
+  document.getElementById('u-pic').src=u.pic||'';
+  document.getElementById('u-name').textContent=u.name||'';
+  userEmail=u.email||'';
+  ownerName=OWNER_MAP[userEmail.toLowerCase()]||null;
+  sv('v-owner', ownerName||u.name||'Unknown');
+  sv('v-email', userEmail);
+  if(!ownerName){
+    document.getElementById('owner-unrecognised').classList.remove('hidden');
+    setBtn('Your email is not registered — contact manager',true);
+  } else {
+    loadData();
+  }
+}
+function signOut(){
+  if(!confirm('Sign out?'))return;
+  try{google.accounts.oauth2.revoke(token,()=>{});}catch{}
+  token=null; localStorage.removeItem(AUTH_KEY);
+  document.getElementById('user-pill').classList.add('gone');
+  document.getElementById('auth').classList.remove('gone');
+}
+async function ensureToken(){
+  if(token&&Date.now()<tokenExp)return;
+  return new Promise((res,rej)=>{
+    const prev=gis.callback;
+    gis.callback=r=>{gis.callback=prev;if(r.error){rej(new Error(r.error));return;}token=r.access_token;tokenExp=Date.now()+r.expires_in*1000-60000;res();};
+    gis.requestAccessToken({prompt:''});
+  });
+}
+function cached(){try{const d=JSON.parse(localStorage.getItem(AUTH_KEY));if(d&&d.exp>Date.now())return d;}catch{}return null;}
+
+// ── LOAD DATA ──
+async function loadData(){
+  const c=cfg();
+  if(!c.sheetId||!c.apiKey){toast('Sheet not configured','err');return;}
+  try{
+    const url=`https://sheets.googleapis.com/v4/spreadsheets/${c.sheetId}/values/${encodeURIComponent('PROCESS_TIMELINES!A:Z')}?key=${c.apiKey}`;
+    const r=await fetch(url);
+    if(!r.ok)throw new Error((await r.json()).error?.message);
+    sheetData=parse((await r.json()).values||[]);
+    populatePOs();
+    goStep(1);
+  }catch(e){toast('Load error: '+e.message,'err');}
+}
+
+function parse(rows){
+  if(rows.length<2)return[];
+  const h=rows[0],idx=n=>h.findIndex(x=>x===n);
+  const I={PO:idx('PO'),BUYER:idx('Buyer'),SKU:idx('SKU'),
+    SEQ:idx('Process_Seq'),PROC:idx('Process_Name'),VAR:idx('Variant'),
+    APP:idx('Applicable'),OWN:idx('Owner'),
+    PLANNED:idx('Planned_Date'),ACTUAL:idx('Actual_Date'),STAT:idx('Status'),
+    PO_F:idx('PO_F'),BUYER_F:idx('Buyer_F'),SKU_F:idx('SKU_F')};
+  return rows.slice(1).map((r,i)=>({
+    row:i+2, po:r[I.PO_F]||r[I.PO]||'', buyer:r[I.BUYER_F]||r[I.BUYER]||'',
+    sku:r[I.SKU_F]||r[I.SKU]||'', seq:parseInt(r[I.SEQ])||0,
+    proc:r[I.PROC]||'', variant:r[I.VAR]||'', app:r[I.APP]||'NO',
+    owner:r[I.OWN]||'', planned:r[I.PLANNED]||'', actual:r[I.ACTUAL]||'', status:r[I.STAT]||'',
+  }));
+}
+
+// ── PO / PROCESS ──
+function populatePOs(){
+  const sel=document.getElementById('sel-po');
+  const seen=new Set(), pos=[];
+  // Filter to only POs that have this owner's processes
+  sheetData.forEach(r=>{
+    if(r.po&&r.owner===ownerName&&r.app==='YES'&&!seen.has(r.po)){
+      seen.add(r.po); pos.push(r);
+    }
+  });
+  sel.innerHTML='<option value="">Select PO...</option>'+
+    pos.map(p=>`<option value="${p.po}">${p.po} — ${p.buyer}</option>`).join('');
+  document.getElementById('step2').classList.remove('hidden');
+}
+
+function onPO(){
+  const po=document.getElementById('sel-po').value; if(!po)return;
+  selPO=po;
+  const row=sheetData.find(r=>r.po===po&&r.owner===ownerName);
+  sv('v-po',po); sv('v-sku',row?.sku||'—');
+  const procs=sheetData.filter(r=>r.po===po&&r.owner===ownerName&&r.app==='YES'&&r.proc).sort((a,b)=>a.seq-b.seq);
+  const sp=document.getElementById('sel-proc');
+  sp.innerHTML='<option value="">Select process...</option>'+
+    procs.map(r=>`<option value="${r.seq}">${r.seq}. ${r.proc}${r.variant?' ('+r.variant+')':''}</option>`).join('');
+  sp.disabled=false;
+  sv('v-proc','Tap to select',true); sv('v-planned','—',true);
+  selProc=null; selRow=null; selPlanned=null;
+  updateBtn();
+}
+
+function onProc(){
+  const seq=parseInt(document.getElementById('sel-proc').value); if(!seq)return;
+  const row=sheetData.find(r=>r.po===selPO&&r.seq===seq&&r.owner===ownerName); if(!row)return;
+  selProc=row.proc; selRow=row.row; selPlanned=row.planned||null;
+  sv('v-proc',`${row.seq}. ${row.proc}`,false);
+  sv('v-planned', selPlanned ? fmtFull(parseSheetDate(selPlanned)) : 'Not set', !selPlanned);
+  // Set max date for actual completion = today
+  const today=toISO(new Date());
+  document.getElementById('sel-actual').max=today;
+  // Set min date for revised = today
+  document.getElementById('sel-revised').min=today;
+  updateBtn();
+}
+
+// ── COMPLETE TOGGLE ──
+function setComplete(yes){
+  isComplete=yes;
+  document.getElementById('opt-yes').className='topt'+(yes?' sel-yes':'');
+  document.getElementById('opt-no').className='topt'+(!yes?' sel-no':'');
+  document.getElementById('complete-section').classList.toggle('hidden',!yes);
+  document.getElementById('notcomplete-section').classList.toggle('hidden',yes);
+  // Reset dates
+  actualDate=null; revisedDate=null; delayReason=null;
+  sv('v-actual','Tap to pick',true); sv('v-revised','Must be today or later',true);
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  document.getElementById('late-flag').classList.add('hidden');
+  document.querySelectorAll('.dq').forEach(d=>d.classList.remove('active'));
+  updateBtn();
+}
+
+// ── ACTUAL DATE (completion) ──
+function onActual(){
+  const v=document.getElementById('sel-actual').value; if(!v)return;
+  // Validate: not future
+  if(v>toISO(new Date())){toast('Completion date cannot be in the future','warn');document.getElementById('sel-actual').value='';return;}
+  actualDate=v;
+  sv('v-actual',fmtFull(new Date(v+'T00:00:00')));
+  document.querySelectorAll('#dq-complete .dq').forEach(d=>d.classList.remove('active'));
+  checkLate();
+  updateBtn();
+}
+function setActualQuick(n){
+  const d=new Date(); d.setDate(d.getDate()+n);
+  const iso=toISO(d);
+  document.getElementById('sel-actual').value=iso; actualDate=iso;
+  sv('v-actual',fmtFull(d));
+  document.querySelectorAll('#dq-complete .dq').forEach((b,i)=>b.classList.toggle('active',[0,-1,-2,-3][i]===n));
+  checkLate(); updateBtn();
+}
+function checkLate(){
+  if(!actualDate||!selPlanned)return;
+  const planned=parseSheetDate(selPlanned);
+  const actual=new Date(actualDate+'T00:00:00');
+  const flag=document.getElementById('late-flag');
+  if(actual>planned){
+    const days=Math.round((actual-planned)/(1000*60*60*24));
+    document.getElementById('late-msg').textContent=`Completed ${days} day${days>1?'s':''} late — delay recorded automatically`;
+    flag.classList.remove('hidden');
+  } else {
+    flag.classList.add('hidden');
+  }
+}
+
+// ── REVISED DATE (not complete) ──
+function onRevised(){
+  const v=document.getElementById('sel-revised').value; if(!v)return;
+  // Validate: must be today or future
+  if(v<toISO(new Date())){toast('New commitment date must be today or later','warn');document.getElementById('sel-revised').value='';return;}
+  revisedDate=v;
+  sv('v-revised',fmtFull(new Date(v+'T00:00:00')));
+  document.querySelectorAll('#dq-revised .dq').forEach(d=>d.classList.remove('active'));
+  updateBtn();
+}
+function setRevisedQuick(n){
+  const d=new Date(); d.setDate(d.getDate()+n);
+  const iso=toISO(d);
+  document.getElementById('sel-revised').value=iso; revisedDate=iso;
+  sv('v-revised',fmtFull(d));
+  document.querySelectorAll('#dq-revised .dq').forEach((b,i)=>b.classList.toggle('active',[1,3,5,7,10,14][i]===n));
+  updateBtn();
+}
+function toggleReason(el,val){
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  delayReason=val;
+  updateBtn();
+}
+
+// ── STEP NAVIGATION ──
+function goStep(n){
+  step=n;
+  document.getElementById('step1').classList.toggle('hidden',n<1);
+  document.getElementById('step2').classList.toggle('hidden',n<2);
+  document.getElementById('step3').classList.toggle('hidden',n<3);
+  document.getElementById('step4').classList.toggle('hidden',n<4);
+  // Update step dots
+  for(let i=1;i<=4;i++){
+    const dot=document.getElementById('sdot-'+i);
+    dot.className='step-dot'+(i<n?' done':i===n?' active':'');
+    if(i<4){
+      const line=document.getElementById('sline-'+i);
+      line.className='step-line'+(i<n?' done':'');
+    }
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+  updateBtn();
+}
+
+function nextStep(){
+  if(step===1){ goStep(2); return; }
+  if(step===2){
+    if(!selPO||!selProc){toast('Select PO and process first','warn');return;}
+    goStep(3); return;
+  }
+  if(step===3){
+    if(isComplete===null){toast('Select Yes or No','warn');return;}
+    if(isComplete&&!actualDate){toast('Select completion date','warn');return;}
+    if(!isComplete&&!revisedDate){toast('Select new commitment date','warn');return;}
+    if(!isComplete&&!delayReason){toast('Select a delay reason','warn');return;}
+    buildConfirm(); goStep(4); return;
+  }
+  if(step===4){ submitForm(); return; }
+}
+
+function buildConfirm(){
+  sv2('cf-owner', ownerName||userEmail);
+  sv2('cf-po', selPO);
+  sv2('cf-proc', selProc);
+  sv2('cf-planned', selPlanned ? fmtShort(parseSheetDate(selPlanned)) : 'Not set');
+  if(isComplete){
+    sv2('cf-status','✅ COMPLETED');
+    document.getElementById('cf-date-label').textContent='Actual date';
+    sv2('cf-date', fmtShort(new Date(actualDate+'T00:00:00')));
+    // Delay
+    if(selPlanned){
+      const planned=parseSheetDate(selPlanned), actual=new Date(actualDate+'T00:00:00');
+      const days=Math.round((actual-planned)/(1000*60*60*24));
+      if(days>0){
+        document.getElementById('cf-delay-row').style.display='flex';
+        sv2('cf-delay', days+' day'+(days>1?'s':'')+' late');
+      } else {
+        document.getElementById('cf-delay-row').style.display='none';
+      }
+    }
+    document.getElementById('cf-reason-row').style.display='none';
+  } else {
+    sv2('cf-status','🔄 REVISED DATE');
+    document.getElementById('cf-date-label').textContent='New commitment';
+    sv2('cf-date', fmtShort(new Date(revisedDate+'T00:00:00')));
+    document.getElementById('cf-delay-row').style.display='none';
+    document.getElementById('cf-reason-row').style.display='flex';
+    const notes=document.getElementById('ta-reason').value.trim();
+    sv2('cf-reason', delayReason+(notes?' — '+notes:''));
+  }
+}
+
+// ── SUBMIT ──
+async function submitForm(){
+  const btn=document.getElementById('submit-btn');
+  btn.classList.add('loading'); btn.textContent='SUBMITTING...'; btn.disabled=true;
+  try{
+    await ensureToken();
+    const c=cfg();
+    const now=new Date();
+    const ts=now.toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const notes=document.getElementById('ta-reason').value.trim();
+
+    // Calculate delay days
+    let delayDays=0;
+    if(isComplete&&selPlanned){
+      const planned=parseSheetDate(selPlanned);
+      const actual=new Date(actualDate+'T00:00:00');
+      delayDays=Math.max(0,Math.round((actual-planned)/(1000*60*60*24)));
+    } else if(!isComplete&&selPlanned){
+      const planned=parseSheetDate(selPlanned);
+      const revised=new Date(revisedDate+'T00:00:00');
+      delayDays=Math.max(0,Math.round((revised-planned)/(1000*60*60*24)));
+    }
+
+    // Build data writes
+    const data=[];
+    if(isComplete){
+      const ds=fmtSheet(new Date(actualDate+'T00:00:00'));
+      data.push({range:`PROCESS_TIMELINES!N${selRow}`,values:[[ds]]}); // Actual_Date col N
+      if(delayDays>0){
+        data.push({range:`PROCESS_TIMELINES!O${selRow}`,values:[[delayDays]]}); // Delay_Days col O
+      }
+    } else {
+      // Revised planned date
+      const ds=fmtSheet(new Date(revisedDate+'T00:00:00'));
+      data.push({range:`PROCESS_TIMELINES!M${selRow}`,values:[[ds]]}); // Planned_Date col M
+      data.push({range:`PROCESS_TIMELINES!O${selRow}`,values:[[delayDays]]}); // Delay_Days
+      const reason=delayReason+(notes?' — '+notes:'');
+      data.push({range:`PROCESS_TIMELINES!P${selRow}`,values:[[reason]]}); // Delay_Cause col P
+    }
+    // Timestamp col T
+    data.push({range:`PROCESS_TIMELINES!T${selRow}`,values:[['Updated by '+ownerName+' on '+ts]]});
+
+    // Also append to OWNER_FORM_DATA
+    const formRow=[ts, ownerName, userEmail, selPO, selProc,
+      selPlanned||'', isComplete?'COMPLETED':'REVISED',
+      isComplete?actualDate:revisedDate, delayDays, delayReason||'', notes];
+
+    const res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${c.sheetId}/values:batchUpdate`,{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({valueInputOption:'USER_ENTERED',data}),
+    });
+    if(!res.ok)throw new Error((await res.json()).error?.message);
+
+    // Append to OWNER_FORM_DATA
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${c.sheetId}/values/${encodeURIComponent('OWNER_FORM_DATA!A:K')}:append?valueInputOption=USER_ENTERED`,{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({values:[formRow]}),
+    });
+
+    showSuccess();
+  }catch(e){
+    btn.classList.remove('loading'); btn.classList.add('fail');
+    btn.textContent='✗ FAILED — TAP TO RETRY'; btn.disabled=false;
+    toast('Error: '+e.message,'err');
+    setTimeout(()=>{btn.classList.remove('fail');updateBtn();},3000);
+  }
+}
+
+function showSuccess(){
+  const isComp=isComplete;
+  const date=isComp?actualDate:revisedDate;
+  document.getElementById('success-detail').innerHTML=`
+    <strong>${ownerName}</strong> submitted<br>
+    PO: <strong>${selPO}</strong><br>
+    Process: <strong>${selProc}</strong><br>
+    ${isComp?'Completed':'New commitment'}: <strong>${fmtShort(new Date(date+'T00:00:00'))}</strong><br>
+    ${!isComp&&delayReason?'Reason: <strong>'+delayReason+'</strong>':''}
+  `;
+  document.getElementById('success-screen').classList.remove('gone');
+}
+
+function resetAll(){
+  document.getElementById('success-screen').classList.add('gone');
+  selPO=null;selProc=null;selRow=null;selPlanned=null;
+  isComplete=null;actualDate=null;revisedDate=null;delayReason=null;
+  document.getElementById('sel-po').value='';
+  document.getElementById('sel-proc').value='';
+  document.getElementById('sel-proc').disabled=true;
+  document.getElementById('sel-actual').value='';
+  document.getElementById('sel-revised').value='';
+  document.getElementById('ta-reason').value='';
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.dq').forEach(d=>d.classList.remove('active'));
+  document.getElementById('opt-yes').className='topt';
+  document.getElementById('opt-no').className='topt';
+  document.getElementById('complete-section').classList.add('hidden');
+  document.getElementById('notcomplete-section').classList.add('hidden');
+  document.getElementById('late-flag').classList.add('hidden');
+  sv('v-po','Tap to select',true); sv('v-sku','—',true);
+  sv('v-proc','Select PO first',true); sv('v-planned','—',true);
+  sv('v-actual','Tap to pick',true); sv('v-revised','Must be today or later',true);
+  goStep(2);
+}
+
+// ── HELPERS ──
+function sv(id,t,ph=false){
+  const el=document.getElementById(id);
+  if(!el)return; el.textContent=t; el.className=ph?'fval ph':'fval'; if(!ph)el.style.color='';
+}
+function sv2(id,t){ const el=document.getElementById(id); if(el)el.textContent=t; }
+function fmtShort(d){ return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}); }
+function fmtFull(d){ return d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); }
+function fmtSheet(d){ return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-'); }
+function toISO(d){ return d.toISOString().split('T')[0]; }
+function parseSheetDate(str){
+  // Handle "02-Feb-26" format
+  if(!str)return new Date();
+  const months={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  const p=str.split('-');
+  if(p.length===3&&isNaN(p[1])){
+    const yr=parseInt(p[2])<50?2000+parseInt(p[2]):1900+parseInt(p[2]);
+    return new Date(yr,months[p[1]],parseInt(p[0]));
+  }
+  return new Date(str);
+}
+
+function updateBtn(){
+  const btn=document.getElementById('submit-btn');
+  if(step===1){ btn.textContent='CONTINUE →'; btn.disabled=!ownerName; return; }
+  if(step===2){
+    const ok=selPO&&selProc;
+    btn.disabled=!ok;
+    btn.textContent=ok?'CONTINUE TO STATUS →':'SELECT PO & PROCESS TO CONTINUE';
+    return;
+  }
+  if(step===3){
+    if(isComplete===null){btn.textContent='SELECT YES OR NO TO CONTINUE';btn.disabled=true;return;}
+    if(isComplete){const ok=!!actualDate;btn.disabled=!ok;btn.textContent=ok?'REVIEW & CONFIRM →':'SELECT COMPLETION DATE';return;}
+    const ok=revisedDate&&delayReason;btn.disabled=!ok;
+    btn.textContent=ok?'REVIEW & CONFIRM →':(!revisedDate?'SELECT NEW DATE':'SELECT DELAY REASON');
+    return;
+  }
+  if(step===4){btn.textContent='SUBMIT UPDATE ✓';btn.disabled=false;return;}
+}
+
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+type;
+  setTimeout(()=>t.className='toast',2800);
+}
+
+// ── BOOT ──
+window.addEventListener('load',()=>{
+  const c=cached();
+  if(c){token=c.token;tokenExp=c.exp;onSignedIn(c.user);}
+  initGIS();
+});
+</script>
+</body>
+</html>
