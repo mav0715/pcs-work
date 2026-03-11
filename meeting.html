@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Meeting Mode — PCS CHAMPO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root {
+    --bg:#0D0F14; --bg2:#13161E; --bg3:#1A1E2A;
+    --border:#252A38; --text:#E8EAF0; --muted:#5A6070;
+    --accent:#4F8EF7; --green:#2ECC71; --red:#E74C3C; --amber:#F39C12;
+    --mono:'Space Mono',monospace; --sans:'DM Sans',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;opacity:0.18}
+
+  /* AUTH SCREEN */
+  .auth-screen{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:16px}
+  .auth-screen.hidden{display:none}
+  .auth-tag{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase}
+  .auth-logo{font-family:var(--mono);font-size:22px;font-weight:700}
+  .auth-logo span{color:var(--accent)}
+  .auth-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:26px 20px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:16px}
+  .auth-card-title{font-family:var(--mono);font-size:11px;color:var(--text);letter-spacing:0.1em;text-align:center}
+  .auth-desc{font-size:12px;color:var(--muted);text-align:center;line-height:1.7}
+  .field-group{display:flex;flex-direction:column;gap:5px}
+  .field-group label{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase}
+  .auth-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:11px;padding:11px 12px;outline:none;transition:border-color 0.2s}
+  .auth-input:focus{border-color:var(--accent)}
+  .auth-hint{font-size:10px;color:var(--muted);line-height:1.6}
+  .divider{display:flex;align-items:center;gap:10px}
+  .divider-line{flex:1;height:1px;background:var(--border)}
+  .divider-txt{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.1em;white-space:nowrap}
+  .google-btn{width:100%;padding:13px 16px;background:#fff;border:none;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:10px;font-family:var(--sans);font-size:14px;font-weight:600;color:#1f1f1f;cursor:pointer;transition:all 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.35)}
+  .google-btn:hover{box-shadow:0 4px 14px rgba(0,0,0,0.4);transform:translateY(-1px)}
+  .google-btn:active{transform:scale(0.98)}
+  .google-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+  .unverified-note{font-size:10px;color:var(--muted);text-align:center;line-height:1.6;background:rgba(243,156,18,0.08);border:1px solid rgba(243,156,18,0.2);border-radius:6px;padding:10px 12px}
+  .unverified-note strong{color:var(--amber)}
+
+  /* TOPBAR */
+  .topbar{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0}
+  .topbar-left{display:flex;flex-direction:column;gap:2px}
+  .topbar-tag{font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--accent);text-transform:uppercase}
+  .topbar-title{font-family:var(--mono);font-size:15px;font-weight:700}
+  .topbar-title span{color:var(--accent)}
+  .topbar-right{display:flex;align-items:center;gap:8px}
+  #clock{font-family:var(--mono);font-size:16px;font-weight:700}
+  .user-chip{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--green);background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.25);border-radius:6px;padding:4px 8px;cursor:pointer}
+  .user-chip.hidden{display:none}
+  .user-chip img{width:16px;height:16px;border-radius:50%}
+  .user-chip:hover{background:rgba(46,204,113,0.18)}
+  .dash-link{font-family:var(--mono);font-size:9px;padding:5px 9px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--muted);text-decoration:none;letter-spacing:0.05em;transition:all 0.2s}
+  .dash-link:hover{color:var(--accent);border-color:var(--accent)}
+
+  /* MAIN */
+  .main{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;padding:14px 14px 100px;gap:11px;max-width:560px;width:100%;margin:0 auto}
+  .section-label{font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);padding:0 2px}
+
+  /* FIELD CARDS */
+  .field-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .field-row{display:flex;align-items:center;padding:0 14px;min-height:50px;border-bottom:1px solid var(--border);gap:10px;position:relative}
+  .field-row:last-child{border-bottom:none}
+  .field-icon{font-size:15px;flex-shrink:0;width:22px;text-align:center}
+  .field-content{flex:1;display:flex;flex-direction:column;gap:1px;min-width:0}
+  .field-label{font-size:9px;font-family:var(--mono);color:var(--muted);letter-spacing:0.1em;text-transform:uppercase}
+  .field-value{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .field-value.ph{color:var(--muted);font-weight:400;font-size:12px}
+  .field-arrow{font-size:10px;color:var(--muted);flex-shrink:0}
+  select.ns,input[type="date"].nd{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;font-size:16px}
+  select.ns:disabled{cursor:not-allowed}
+
+  /* QUICK DATES */
+  .quick-dates{display:flex;gap:6px;flex-wrap:wrap}
+  .qd{font-family:var(--mono);font-size:10px;padding:6px 11px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;transition:all 0.15s;letter-spacing:0.04em}
+  .qd:active{transform:scale(0.95)}
+  .qd.active{background:rgba(79,142,247,0.15);border-color:var(--accent);color:var(--accent)}
+
+  /* REMARKS */
+  .remarks-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px}
+  .remarks-inner{display:flex;gap:10px;padding:13px 14px;align-items:flex-start}
+  .remarks-label{font-size:9px;font-family:var(--mono);color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:5px}
+  textarea#rmk{background:transparent;border:none;outline:none;color:var(--text);font-family:var(--sans);font-size:13px;resize:none;width:100%;min-height:55px;line-height:1.5}
+  textarea#rmk::placeholder{color:var(--muted)}
+
+  /* WRITE BANNER */
+  .write-banner{display:flex;align-items:center;gap:8px;padding:9px 13px;border-radius:8px;font-family:var(--mono);font-size:10px;border:1px solid var(--border);background:var(--bg3)}
+  .wdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .wdot.green{background:var(--green);box-shadow:0 0 5px var(--green)}
+  .wdot.amber{background:var(--amber);box-shadow:0 0 5px var(--amber)}
+  .wdot.red{background:var(--red);box-shadow:0 0 5px var(--red)}
+
+  /* LOG */
+  .log-header{display:flex;align-items:center;justify-content:space-between}
+  .log-title{font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--muted);text-transform:uppercase;padding:0 2px}
+  .copy-btn{font-family:var(--mono);font-size:9px;padding:3px 9px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;letter-spacing:0.08em;display:none}
+  .copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+  .log-empty{font-family:var(--mono);font-size:10px;color:var(--muted);padding:6px 2px}
+  .log-item{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 13px;display:flex;align-items:flex-start;gap:8px;margin-bottom:5px}
+  .log-item.ok{border-color:rgba(46,204,113,0.3)}
+  .log-item.pending{border-color:rgba(243,156,18,0.3)}
+  .ldot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px}
+  .log-body{flex:1;min-width:0}
+  .log-main{font-size:12px;font-weight:500}
+  .log-meta{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .log-time{font-family:var(--mono);font-size:9px;color:var(--muted);flex-shrink:0}
+
+  /* SAVE BTN */
+  .save-wrap{position:fixed;bottom:0;left:0;right:0;padding:10px 14px;padding-bottom:max(18px,env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 28%);z-index:50}
+  .save-btn{width:100%;max-width:560px;margin:0 auto;display:block;padding:15px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:0.08em;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 18px rgba(79,142,247,0.28)}
+  .save-btn:hover{opacity:0.9}
+  .save-btn:active{transform:scale(0.98)}
+  .save-btn:disabled{background:var(--bg3);color:var(--muted);box-shadow:none;cursor:not-allowed}
+  .save-btn.saving{background:var(--amber)}
+  .save-btn.success{background:var(--green)}
+  .save-btn.fail{background:var(--red)}
+
+  /* TOAST */
+  .toast{position:fixed;top:68px;left:50%;transform:translateX(-50%) translateY(-16px);background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-family:var(--mono);font-size:11px;color:var(--text);opacity:0;transition:all 0.28s;z-index:300;white-space:nowrap;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.ok{border-color:var(--green);color:var(--green);background:rgba(46,204,113,0.1)}
+  .toast.err{border-color:var(--red);color:var(--red);background:rgba(231,76,60,0.1)}
+
+  /* clickable field rows */
+  .field-row.clickable{cursor:pointer;transition:background 0.15s}
+  .field-row.clickable:hover{background:rgba(255,255,255,0.03)}
+  .field-row.clickable:active{background:rgba(79,142,247,0.07)}
+
+  /* SKU selector */
+  .sku-section{display:flex;flex-direction:column;gap:8px}
+  .sku-sel-header{display:flex;align-items:center;justify-content:space-between;padding:0 2px}
+  .sel-all-btn{font-family:var(--mono);font-size:9px;padding:5px 11px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;letter-spacing:0.06em;transition:all 0.15s}
+  .sel-all-btn:hover{color:var(--accent);border-color:var(--accent)}
+  .sku-card{background:var(--bg2);border:2px solid var(--border);border-radius:9px;padding:11px 13px;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;gap:11px}
+  .sku-card:active{transform:scale(0.98)}
+  .sku-card.selected{border-color:var(--accent);background:rgba(79,142,247,0.06)}
+  .sku-chk{width:20px;height:20px;border-radius:5px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all 0.18s}
+  .sku-card.selected .sku-chk{background:var(--accent);border-color:var(--accent);color:#fff}
+  .sku-info{flex:1;min-width:0}
+  .sku-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sku-meta{font-size:10px;color:var(--muted);margin-top:1px;font-family:var(--mono)}
+
+  @media(max-width:380px){.topbar-title{font-size:13px}#clock{font-size:14px}.field-value{font-size:12px}}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div class="auth-screen" id="auth-screen">
+  <div class="auth-tag">Meeting Mode</div>
+  <div class="auth-logo">PCS <span>CHAMPO</span></div>
+  <div class="auth-card">
+    <div class="auth-card-title">CONNECT YOUR SHEET</div>
+
+    <div class="field-group">
+      <label>Google Sheet ID</label>
+      <input class="auth-input" id="cfg-sheet" placeholder="1S2ikmWM_GlWbYVu..." />
+      <div class="auth-hint">The long string between <code style="color:var(--accent)">/d/</code> and <code style="color:var(--accent)">/edit</code> in your Sheet URL</div>
+    </div>
+
+    <div class="field-group">
+      <label>API Key (for reading)</label>
+      <input class="auth-input" id="cfg-api" placeholder="AIza..." />
+    </div>
+
+    <div class="divider">
+      <div class="divider-line"></div>
+      <div class="divider-txt">THEN SIGN IN WITH GOOGLE</div>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="auth-desc">Sign in with the Google account that owns the sheet. This gives Meeting Mode permission to write dates directly back — no copy-paste needed.</div>
+
+    <button class="google-btn" id="g-btn" onclick="startSignIn()">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/></svg>
+      Sign in with Google
+    </button>
+
+    <div class="unverified-note">
+      Google may show an <strong>"unverified app"</strong> warning. This is normal for self-hosted tools — click <strong>Advanced → Go to mav0715.github.io</strong> to proceed.
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-tag">Meeting Mode</div>
+    <div class="topbar-title">PCS <span>CHAMPO</span></div>
+  </div>
+  <div class="topbar-right">
+    <div id="clock">--:--</div>
+    <div class="user-chip hidden" id="user-chip" onclick="signOut()" title="Click to sign out">
+      <img id="u-avatar" src="" alt="">
+      <span id="u-name">—</span>
+    </div>
+    <a href="index.html" class="dash-link">← DASH</a>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- Write status -->
+  <div class="write-banner">
+    <div class="wdot amber" id="wdot"></div>
+    <span id="wstatus">Not signed in — sign in to save directly to sheet</span>
+  </div>
+
+  <!-- BUYER -->
+  <div class="section-label">Select Buyer & PO</div>
+  <div class="field-card">
+    <div class="field-row">
+      <div class="field-icon">🏬</div>
+      <div class="field-content">
+        <div class="field-label">Buyer</div>
+        <div class="field-value ph" id="v-buyer">Tap to select</div>
+      </div>
+      <div class="field-arrow">▼</div>
+      <select class="ns" id="sel-buyer" onchange="onBuyer()"><option value="">Select buyer...</option></select>
+    </div>
+    <div class="field-row">
+      <div class="field-icon">📦</div>
+      <div class="field-content">
+        <div class="field-label">Purchase Order</div>
+        <div class="field-value ph" id="v-po">Select buyer first</div>
+      </div>
+      <div class="field-arrow">▼</div>
+      <select class="ns" id="sel-po" onchange="onPO()" disabled><option value="">Select PO...</option></select>
+    </div>
+    <div class="field-row" id="sku-info-row" style="display:none">
+      <div class="field-icon">🏷</div>
+      <div class="field-content">
+        <div class="field-label">SKUs Covered</div>
+        <div class="field-value" id="v-skus" style="white-space:normal;font-size:11px;line-height:1.5;color:var(--muted)">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Process -->
+  <div class="section-label">Select Process</div>
+  <div class="field-card">
+    <div class="field-row">
+      <div class="field-icon">⚙️</div>
+      <div class="field-content">
+        <div class="field-label">Process</div>
+        <div class="field-value ph" id="v-process">Select PO first</div>
+      </div>
+      <div class="field-arrow">▼</div>
+      <select class="ns" id="sel-process" onchange="onProcess()" disabled><option value="">Select process...</option></select>
+    </div>
+    <div class="field-row">
+      <div class="field-icon">👤</div>
+      <div class="field-content"><div class="field-label">Owner</div><div class="field-value ph" id="v-owner">—</div></div>
+    </div>
+    <div class="field-row">
+      <div class="field-icon">📊</div>
+      <div class="field-content"><div class="field-label">Current Status</div><div class="field-value ph" id="v-status">—</div></div>
+    </div>
+  </div>
+
+  <!-- Date -->
+  <div class="section-label">Commitment Date</div>
+  <div class="quick-dates">
+    <button class="qd" onclick="qDate(0)">Today</button>
+    <button class="qd" onclick="qDate(1)">Tomorrow</button>
+    <button class="qd" onclick="qDate(3)">+3d</button>
+    <button class="qd" onclick="qDate(5)">+5d</button>
+    <button class="qd" onclick="qDate(7)">+1wk</button>
+    <button class="qd" onclick="qDate(10)">+10d</button>
+    <button class="qd" onclick="qDate(14)">+2wk</button>
+  </div>
+  <div class="field-card" style="margin-top:2px">
+    <div class="field-row clickable" onclick="openDatePicker()">
+      <div class="field-icon">📅</div>
+      <div class="field-content">
+        <div class="field-label">Planned Date</div>
+        <div class="field-value ph" id="v-date">Tap to pick or use quick buttons</div>
+      </div>
+      <div class="field-arrow">▼</div>
+      <input type="date" class="nd" id="sel-date" onchange="onDate()">
+    </div>
+  </div>
+
+  <!-- Remarks -->
+  <div class="section-label">Remarks</div>
+  <div class="remarks-card">
+    <div class="remarks-inner">
+      <div style="font-size:15px;padding-top:2px">✏️</div>
+      <div style="flex:1">
+        <div class="remarks-label">Owner's remarks / notes</div>
+        <textarea id="rmk" placeholder="Delay reason, commitment, anything the owner says..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Session Log -->
+  <div>
+    <div class="log-header">
+      <div class="log-title">This Session</div>
+      <button class="copy-btn" id="copy-btn" onclick="copyLog()">⎘ COPY ALL</button>
+    </div>
+    <div id="log-list" style="margin-top:8px"><div class="log-empty">No entries yet this session</div></div>
+  </div>
+
+</div>
+
+<!-- SAVE -->
+<div class="save-wrap">
+  <button class="save-btn" id="save-btn" onclick="save()" disabled>SIGN IN TO ENABLE SAVING</button>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+//  !! ONE-TIME SETUP REQUIRED !!
+//
+//  Replace CLIENT_ID below with your OAuth 2.0 Client ID.
+//
+//  How to get it (5 minutes):
+//  1. console.cloud.google.com → select your project "pcs-champo-carpets"
+//  2. APIs & Services → Credentials → + CREATE CREDENTIALS → OAuth client ID
+//  3. Application type: Web application
+//  4. Name: PCS Meeting Mode
+//  5. Authorised JavaScript origins: add → https://mav0715.github.io
+//  6. Click Create → copy the Client ID (ends in .apps.googleusercontent.com)
+//  7. Paste it below replacing YOUR_CLIENT_ID
+//
+//  Also go to OAuth consent screen → add your email as a Test user
+//  (until the app is published, only test users can sign in)
+// ─────────────────────────────────────────────────────────────
+const CLIENT_ID  = '255347436727-t4p95ieuscetn5m09geb2d295or1c07n.apps.googleusercontent.com'; // ← REPLACE THIS
+const SCOPE      = 'https://www.googleapis.com/auth/spreadsheets';
+const CFG_KEY    = 'pcs_config';
+const AUTH_KEY   = 'pcs_oauth';
+
+// ── STATE ──
+let token      = null;
+let tokenExp   = 0;
+let gisClient  = null;
+let sheetData  = [];
+let log        = [];
+let selBuyer   = null;
+let selPO      = null;
+let selProc    = null;
+let selDate    = null;
+let selRow     = null;
+let procRows   = []; // all rows matching PO+process
+let selectedSKUs = []; // indices into procRows
+
+// ── CLOCK ──
+setInterval(() => {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+}, 1000);
+document.getElementById('clock').textContent =
+  new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+
+// ── CONFIG ──
+function cfg() { try { return JSON.parse(localStorage.getItem(CFG_KEY))||{}; } catch { return {}; } }
+function saveCfg(o) { localStorage.setItem(CFG_KEY, JSON.stringify({...cfg(),...o})); }
+
+// ── GIS INIT ──
+function initGIS() {
+  if (typeof google === 'undefined') { setTimeout(initGIS, 400); return; }
+  gisClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPE,
+    callback: onToken,
+  });
+  // restore cached token
+  const cached = cachedToken();
+  if (cached) { token = cached.token; tokenExp = cached.exp; onSignedIn(cached.user); }
+}
+
+function startSignIn() {
+  const sid = document.getElementById('cfg-sheet').value.trim();
+  const api = document.getElementById('cfg-api').value.trim();
+  if (!sid) { toast('Enter Sheet ID first','err'); document.getElementById('cfg-sheet').focus(); return; }
+  if (!api) { toast('Enter API Key first','err'); document.getElementById('cfg-api').focus(); return; }
+  saveCfg({ sheetId: sid, apiKey: api });
+  if (!gisClient) { toast('Google still loading, try again','err'); return; }
+  gisClient.requestAccessToken({ prompt: 'consent' });
+}
+
+function onToken(resp) {
+  if (resp.error) { toast('Sign-in error: '+resp.error,'err'); return; }
+  token    = resp.access_token;
+  tokenExp = Date.now() + resp.expires_in*1000 - 60000;
+  fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+token}})
+    .then(r=>r.json()).then(p => {
+      const user = { name: p.given_name||p.name, pic: p.picture, email: p.email };
+      localStorage.setItem(AUTH_KEY, JSON.stringify({token, exp:tokenExp, user}));
+      onSignedIn(user);
+    });
+}
+
+function onSignedIn(user) {
+  document.getElementById('auth-screen').classList.add('hidden');
+  const chip = document.getElementById('user-chip');
+  chip.classList.remove('hidden');
+  document.getElementById('u-avatar').src = user.pic||'';
+  document.getElementById('u-name').textContent = user.name||'';
+  setWrite('green','✓ Signed in as '+(user.email||user.name)+' — saves go directly to sheet');
+  loadData();
+}
+
+function signOut() {
+  if (!confirm('Sign out?')) return;
+  try { google.accounts.oauth2.revoke(token, ()=>{}); } catch {}
+  token = null; localStorage.removeItem(AUTH_KEY);
+  document.getElementById('user-chip').classList.add('hidden');
+  document.getElementById('auth-screen').classList.remove('hidden');
+  setWrite('amber','Signed out — sign in to save');
+}
+
+async function ensureToken() {
+  if (token && Date.now() < tokenExp) return;
+  return new Promise((res,rej) => {
+    const prev = gisClient.callback;
+    gisClient.callback = r => {
+      gisClient.callback = prev;
+      if (r.error) { rej(new Error(r.error)); return; }
+      token = r.access_token; tokenExp = Date.now()+r.expires_in*1000-60000; res();
+    };
+    gisClient.requestAccessToken({prompt:''});
+  });
+}
+
+function cachedToken() {
+  try {
+    const d = JSON.parse(localStorage.getItem(AUTH_KEY));
+    if (d && d.exp > Date.now()) return d;
+  } catch {}
+  return null;
+}
+
+// ── LOAD DATA ──
+async function loadData() {
+  const c = cfg();
+  if (!c.sheetId || !c.apiKey) { toast('Missing config','err'); return; }
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${c.sheetId}/values/${encodeURIComponent('PROCESS_TIMELINES!A:Z')}?key=${c.apiKey}`;
+    const r   = await fetch(url);
+    if (!r.ok) throw new Error((await r.json()).error?.message);
+    const {values=[]} = await r.json();
+    sheetData = parse(values);
+    populateBuyers();
+    toast('✓ '+[...new Set(sheetData.map(r=>r.po).filter(Boolean))].length+' POs loaded','ok');
+  } catch(e) { toast('Load error: '+e.message,'err'); }
+}
+
+function parse(rows) {
+  if (rows.length<2) return [];
+  const h=rows[0], idx=n=>h.findIndex(x=>x===n);
+  const I={PO:idx('PO'),BUYER:idx('Buyer'),SKU:idx('SKU'),SEQ:idx('Process_Seq'),
+    PROC:idx('Process_Name'),VAR:idx('Variant'),APP:idx('Applicable'),
+    OWN:idx('Owner'),STAT:idx('Status'),PLANNED:idx('Planned_Date'),
+    PO_F:idx('PO_F'),BUYER_F:idx('Buyer_F'),SKU_F:idx('SKU_F')};
+  return rows.slice(1).map((r,i)=>({
+    row:i+2, po:r[I.PO_F]||r[I.PO]||'', buyer:r[I.BUYER_F]||r[I.BUYER]||'',
+    sku:r[I.SKU_F]||r[I.SKU]||'',
+    seq:parseInt(r[I.SEQ])||0, proc:r[I.PROC]||'', variant:r[I.VAR]||'',
+    app:r[I.APP]||'NO', owner:r[I.OWN]||'', status:r[I.STAT]||'',
+    planned:r[I.PLANNED]||'',
+  }));
+}
+
+// ── BUYER / PO / SKU / PROCESS ──
+function populateBuyers() {
+  const sel=document.getElementById('sel-buyer');
+  const seen=new Set();
+  sheetData.forEach(r=>{ if(r.buyer&&!seen.has(r.buyer)) seen.add(r.buyer); });
+  sel.innerHTML='<option value="">Select buyer...</option>'+
+    [...seen].sort().map(b=>`<option value="${b}">${b}</option>`).join('');
+}
+
+function onBuyer() {
+  const buyer=document.getElementById('sel-buyer').value; if(!buyer) return;
+  selBuyer=buyer; selPO=null; selProc=null; selRow=null;
+  procRows=[]; selectedSKUs=[];
+  sv('v-buyer',buyer);
+  sv('v-po','Select PO',true);
+  sv('v-process','Select PO first',true);
+  sv('v-owner','—',true); sv('v-status','—',true);
+  // Populate POs for this buyer
+  const seen=new Set(), pos=[];
+  sheetData.forEach(r=>{
+    if(r.buyer===buyer&&r.po&&!seen.has(r.po)){seen.add(r.po);pos.push(r);}
+  });
+  const sp=document.getElementById('sel-po');
+  sp.innerHTML='<option value="">Select PO...</option>'+
+    pos.map(p=>`<option value="${p.po}">${p.po}</option>`).join('');
+  sp.disabled=false;
+  // Reset process
+  const spr=document.getElementById('sel-process');
+  spr.innerHTML='<option value="">Select process...</option>'; spr.disabled=true;
+  updateBtn();
+}
+
+function onPO() {
+  const po=document.getElementById('sel-po').value; if(!po) return;
+  selPO=po; selProc=null; selRow=null;
+  procRows=[]; selectedSKUs=[];
+  sv('v-po',po);
+  sv('v-process','Tap to select process',true);
+  sv('v-owner','—',true); sv('v-status','—',true);
+  // Show all SKUs covered by this PO block as info
+  const allSKUs=[...new Set(sheetData.filter(r=>r.po===po&&r.sku).map(r=>r.sku))];
+  const skuRow=document.getElementById('sku-info-row');
+  if(allSKUs.length){
+    document.getElementById('v-skus').textContent=allSKUs.join(', ');
+    skuRow.style.display='flex';
+  } else {
+    skuRow.style.display='none';
+  }
+  // Populate processes — dedupe by seq
+  const seen=new Set(), procs=[];
+  sheetData.filter(r=>r.po===po&&r.app==='YES'&&r.proc).sort((a,b)=>a.seq-b.seq).forEach(r=>{
+    if(!seen.has(r.seq)){seen.add(r.seq);procs.push(r);}
+  });
+  const sp=document.getElementById('sel-process');
+  sp.innerHTML='<option value="">Select process...</option>'+
+    procs.map(r=>`<option value="${r.seq}">${r.seq}. ${r.proc}</option>`).join('');
+  sp.disabled=false;
+  updateBtn();
+}
+
+function onProcess() {
+  const seq=parseInt(document.getElementById('sel-process').value); if(!seq) return;
+  // One process row per PO block — get it directly
+  const row=sheetData.find(r=>r.po===selPO&&r.seq===seq&&r.app==='YES');
+  if(!row) return;
+  selProc=row.proc; selRow=row.row;
+  procRows=[row]; selectedSKUs=[0];
+  sv('v-process',`${row.seq}. ${row.proc}`);
+  updateProcessMeta(row);
+  updateBtn();
+}
+
+
+function toggleSKU(i){
+  const idx=selectedSKUs.indexOf(i);
+  if(idx===-1) selectedSKUs.push(i);
+  else selectedSKUs.splice(idx,1);
+  selRow=selectedSKUs.length>0?procRows[selectedSKUs[0]].row:null;
+  // Show meta from first selected
+  if(selectedSKUs.length>0) updateProcessMeta(procRows[selectedSKUs[0]]);
+  else { sv('v-owner','—',true); sv('v-status','—',true); }
+  renderSKUCards();
+  updateBtn();
+}
+
+
+function updateProcessMeta(row){
+  sv('v-owner',row.owner||'—',!row.owner);
+  const el=document.getElementById('v-status');
+  el.textContent=row.status||'—'; el.className='field-value';
+  el.style.color=row.status==='DELAY'?'var(--red)':row.status==='IN PROGRESS'?'var(--amber)':row.status==='ON TIME'?'var(--green)':'var(--muted)';
+}
+
+// date picker helper
+function openDatePicker(){
+  const el=document.getElementById('sel-date');
+  try{ el.showPicker(); }catch(e){ el.focus(); }
+}
+
+// ── DATE ──
+function onDate() {
+  const v=document.getElementById('sel-date').value; if(!v) return;
+  selDate=v; sv('v-date',fmtFull(v));
+  document.querySelectorAll('.qd').forEach(b=>b.classList.remove('active'));
+  updateBtn();
+}
+function qDate(n) {
+  const d=new Date(); d.setDate(d.getDate()+n);
+  const iso=d.toISOString().split('T')[0];
+  document.getElementById('sel-date').value=iso; selDate=iso;
+  sv('v-date',fmtFull(iso));
+  document.querySelectorAll('.qd').forEach((b,i)=>b.classList.toggle('active',[0,1,3,5,7,10,14][i]===n));
+  updateBtn();
+}
+
+// ── SAVE ──
+async function save() {
+  if (!selPO||!selProc||!selDate||!selRow) return;
+  const c=cfg(), remarks=document.getElementById('rmk').value.trim();
+  const btn=document.getElementById('save-btn');
+  btn.classList.add('saving'); btn.textContent='SAVING...'; btn.disabled=true;
+  try {
+    await ensureToken();
+    const d=new Date(selDate+'T00:00:00');
+    const ds=d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
+    const data=[
+      {range:`PROCESS_TIMELINES!M${selRow}`,values:[[ds]]},
+      ...(remarks?[{range:`PROCESS_TIMELINES!T${selRow}`,values:[[remarks]]}]:[])
+    ];
+    const res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${c.sheetId}/values:batchUpdate`,{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({valueInputOption:'USER_ENTERED',data}),
+    });
+    if (!res.ok) throw new Error((await res.json()).error?.message||'Write failed');
+    const skuLabel=selectedSKUs.length>1?selectedSKUs.length+' SKUs':(procRows[selectedSKUs[0]]?.sku||selPO);
+    addLog({po:selPO,proc:selProc,date:selDate,remarks,row:selRow,skuLabel,status:'ok'});
+    btn.classList.remove('saving'); btn.classList.add('success');
+    btn.textContent='✓ SAVED TO SHEET';
+    toast(`✓ ${selProc} — ${fmtShort(selDate)}`,'ok');
+    setTimeout(()=>{ btn.classList.remove('success'); reset(); },1600);
+  } catch(e) {
+    btn.classList.remove('saving'); btn.classList.add('fail');
+    btn.textContent='✗ FAILED — TAP TO RETRY'; btn.disabled=false;
+    toast('Error: '+e.message,'err');
+    setTimeout(()=>{ btn.classList.remove('fail'); updateBtn(); },3000);
+  }
+}
+
+// ── LOG ──
+function addLog(e) {
+  e.time=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  log.unshift(e); renderLog();
+  if(log.length===1) document.getElementById('copy-btn').style.display='block';
+}
+function renderLog() {
+  const el=document.getElementById('log-list');
+  if(!log.length){ el.innerHTML='<div class="log-empty">No entries yet this session</div>'; return; }
+  el.innerHTML=log.map(e=>`
+    <div class="log-item ${e.status}">
+      <div class="ldot" style="background:${e.status==='ok'?'var(--green)':'var(--amber)'}"></div>
+      <div class="log-body">
+        <div class="log-main">${e.proc} — PO ${e.po}${e.skuLabel?' · '+e.skuLabel:''}</div>
+        <div class="log-meta">${fmtShort(e.date)}${e.remarks?' · "'+e.remarks.slice(0,50)+(e.remarks.length>50?'…':'')+'"':''}</div>
+      </div>
+      <div class="log-time">${e.time}</div>
+    </div>`).join('');
+}
+function copyLog() {
+  const txt=['Row\tPO\tProcess\tDate\tRemarks',
+    ...log.map(e=>`${e.row}\t${e.po}\t${e.proc}\t${e.date}\t${e.remarks||''}`)].join('\n');
+  navigator.clipboard.writeText(txt).then(()=>toast('Copied — paste into sheet if needed','ok'));
+}
+
+// ── HELPERS ──
+function sv(id,text,ph=false) {
+  const el=document.getElementById(id);
+  el.textContent=text; el.className=ph?'field-value ph':'field-value';
+  if(!ph) el.style.color='';
+}
+function fmtShort(iso) { return new Date(iso+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short'}); }
+function fmtFull(iso)  { return new Date(iso+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); }
+function updateBtn() {
+  const btn=document.getElementById('save-btn');
+  const ready=selPO&&selProc&&selDate&&!!selRow, authed=!!token;
+  btn.disabled=!ready||!authed;
+  if (!authed)    btn.textContent='SIGN IN TO ENABLE SAVING';
+  else if(ready)  btn.textContent=`SAVE — ${selProc} | ${fmtShort(selDate)}`;
+  else            btn.textContent='SELECT PO + PROCESS + DATE TO SAVE';
+}
+function setWrite(color,msg) {
+  document.getElementById('wdot').className='wdot '+color;
+  document.getElementById('wstatus').textContent=msg;
+}
+function reset() {
+  selProc=null; selDate=null; selRow=null;
+  procRows=[]; selectedSKUs=[];
+  document.getElementById('sel-process').value='';
+  document.getElementById('sel-date').value='';
+  document.getElementById('rmk').value='';
+  sv('v-process','Tap to select process',true);
+  sv('v-owner','—',true); sv('v-status','—',true);
+  sv('v-date','Tap to pick or use quick buttons',true);
+  document.querySelectorAll('.qd').forEach(b=>b.classList.remove('active'));
+  updateBtn();
+}
+function toast(msg,type='') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+type;
+  setTimeout(()=>t.className='toast',2800);
+}
+
+// ── BOOT ──
+window.addEventListener('load',()=>{
+  const c=cfg();
+  if(c.sheetId) document.getElementById('cfg-sheet').value=c.sheetId;
+  if(c.apiKey)  document.getElementById('cfg-api').value=c.apiKey;
+  const cached=cachedToken();
+  if(cached&&c.sheetId&&c.apiKey) {
+    token=cached.token; tokenExp=cached.exp;
+    document.getElementById('auth-screen').classList.add('hidden');
+    onSignedIn(cached.user);
+  }
+  initGIS();
+});
+</script>
+</body>
+</html>
