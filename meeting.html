@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Meeting Mode — PCS CHAMPO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0D0F14; --bg2:#13161E; --bg3:#1A1E2A; --bg4:#20263A;
+  --border:#252A38; --border2:#2E3650; --text:#E8EAF0; --muted:#5A6070; --muted2:#7A8090;
+  --accent:#4F8EF7; --green:#2ECC71; --red:#E74C3C; --amber:#F39C12; --purple:#9B59B6;
+  --mono:'Space Mono',monospace; --sans:'DM Sans',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;opacity:0.15}
+.hidden{display:none!important}
+
+/* ── AUTH ── */
+.auth-screen{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:16px}
+.auth-tag{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase}
+.auth-logo{font-family:var(--mono);font-size:22px;font-weight:700}
+.auth-logo span{color:var(--accent)}
+.auth-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:26px 20px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:16px}
+.auth-card-title{font-family:var(--mono);font-size:11px;color:var(--text);letter-spacing:0.1em;text-align:center}
+.auth-desc{font-size:12px;color:var(--muted);text-align:center;line-height:1.7}
+.field-group{display:flex;flex-direction:column;gap:5px}
+.field-group label{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase}
+.auth-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:11px;padding:11px 12px;outline:none;transition:border-color 0.2s}
+.auth-input:focus{border-color:var(--accent)}
+.auth-hint{font-size:10px;color:var(--muted);line-height:1.6}
+.divider{display:flex;align-items:center;gap:10px}
+.divider-line{flex:1;height:1px;background:var(--border)}
+.divider-txt{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.1em;white-space:nowrap}
+.google-btn{width:100%;padding:13px 16px;background:#fff;border:none;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:10px;font-family:var(--sans);font-size:14px;font-weight:600;color:#1f1f1f;cursor:pointer;transition:all 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.35)}
+.google-btn:hover{box-shadow:0 4px 14px rgba(0,0,0,0.4);transform:translateY(-1px)}
+.google-btn:active{transform:scale(0.98)}
+.google-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.unverified-note{font-size:10px;color:var(--muted);text-align:center;line-height:1.6;background:rgba(243,156,18,0.08);border:1px solid rgba(243,156,18,0.2);border-radius:6px;padding:10px 12px}
+.unverified-note strong{color:var(--amber)}
+
+/* ── TOPBAR ── */
+.topbar{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0}
+.topbar-left{display:flex;flex-direction:column;gap:2px}
+.topbar-tag{font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--accent);text-transform:uppercase}
+.topbar-title{font-family:var(--mono);font-size:15px;font-weight:700}
+.topbar-title span{color:var(--accent)}
+.topbar-right{display:flex;align-items:center;gap:8px}
+#clock{font-family:var(--mono);font-size:16px;font-weight:700}
+.user-chip{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--green);background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.25);border-radius:6px;padding:4px 8px;cursor:pointer}
+.user-chip img{width:16px;height:16px;border-radius:50%}
+.user-chip:hover{background:rgba(46,204,113,0.18)}
+.dash-link{font-family:var(--mono);font-size:9px;padding:5px 9px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--muted);text-decoration:none;letter-spacing:0.05em;transition:all 0.2s}
+.dash-link:hover{color:var(--accent);border-color:var(--accent)}
+
+/* ── TAB BAR ── */
+.tab-bar{display:flex;background:var(--bg);border-bottom:1px solid var(--border);position:relative;z-index:9;flex-shrink:0}
+.tab-btn{flex:1;padding:11px 8px;font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-btn:hover:not(.active){color:var(--muted2)}
+
+/* ── MAIN PANELS ── */
+.panel{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;padding:14px 14px 100px;gap:12px;max-width:560px;width:100%;margin:0 auto;overflow-y:auto}
+
+/* ── SECTION LABELS ── */
+.slabel{font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);padding:0 2px}
+
+/* ── FIELD CARDS ── */
+.fcard{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.frow{display:flex;align-items:center;padding:0 14px;min-height:50px;border-bottom:1px solid var(--border);gap:10px;position:relative}
+.frow:last-child{border-bottom:none}
+.frow.clickable{cursor:pointer;transition:background 0.15s}
+.frow.clickable:hover{background:rgba(255,255,255,0.03)}
+.frow.clickable:active{background:rgba(79,142,247,0.07)}
+.ficon{font-size:15px;flex-shrink:0;width:22px;text-align:center}
+.fcontent{flex:1;display:flex;flex-direction:column;gap:1px;min-width:0}
+.flabel{font-size:9px;font-family:var(--mono);color:var(--muted);letter-spacing:0.1em;text-transform:uppercase}
+.fval{font-size:13px;font-weight:500;color:var(--text)}
+.fval.ph{color:var(--muted);font-weight:400;font-size:12px}
+.farrow{font-size:10px;color:var(--muted);flex-shrink:0}
+select.ns,input[type="date"].nd{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;font-size:16px}
+select.ns:disabled{cursor:not-allowed}
+
+/* ── SKU CARDS (for group selection) ── */
+.sku-grid{display:flex;flex-direction:column;gap:7px}
+.sku-card{background:var(--bg2);border:2px solid var(--border);border-radius:10px;padding:11px 13px;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;gap:11px}
+.sku-card:active{transform:scale(0.98)}
+.sku-card.selected{border-color:var(--accent);background:rgba(79,142,247,0.07)}
+.sku-card.in-group{border-color:var(--amber);background:rgba(243,156,18,0.07);cursor:default}
+.sku-chk{width:22px;height:22px;border-radius:6px;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all 0.18s}
+.sku-card.selected .sku-chk{background:var(--accent);border-color:var(--accent);color:#fff}
+.sku-card.in-group .sku-chk{background:var(--amber);border-color:var(--amber);color:#fff}
+.sku-info{flex:1;min-width:0}
+.sku-name{font-size:13px;font-weight:600;color:var(--text)}
+.sku-sub{font-size:10px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+.sku-badge{font-size:9px;font-family:var(--mono);padding:2px 7px;border-radius:4px;background:rgba(243,156,18,0.15);color:var(--amber);border:1px solid rgba(243,156,18,0.3);white-space:nowrap}
+
+/* ── VARIANT PICKER ── */
+.variant-section{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.variant-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.variant-proc{font-size:12px;font-weight:500;flex:1}
+.variant-proc span{font-family:var(--mono);font-size:9px;color:var(--muted);display:block;margin-top:1px}
+.variant-select{background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:var(--mono);font-size:10px;padding:6px 10px;outline:none;cursor:pointer;min-width:120px}
+
+/* ── EXISTING GROUPS ── */
+.group-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color 0.2s}
+.group-card:hover{border-color:var(--border2)}
+.group-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer;gap:10px}
+.group-header-left{flex:1;min-width:0}
+.group-key{font-family:var(--mono);font-size:10px;color:var(--accent);font-weight:700;letter-spacing:0.05em}
+.group-po{font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+.group-sku-count{font-family:var(--mono);font-size:9px;color:var(--muted2);background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:2px 7px}
+.group-actions{display:flex;gap:6px}
+.gact-btn{font-family:var(--mono);font-size:9px;padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--muted2);cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.gact-btn.edit:hover{color:var(--accent);border-color:var(--accent)}
+.gact-btn.del:hover{color:var(--red);border-color:var(--red)}
+.group-body{padding:0 14px 13px;display:flex;flex-direction:column;gap:8px}
+.group-sku-list{display:flex;flex-direction:column;gap:4px}
+.group-sku-item{font-size:11px;color:var(--muted2);font-family:var(--mono);padding:2px 0}
+.group-proc-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.proc-chip{font-family:var(--mono);font-size:9px;padding:3px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--muted)}
+.proc-chip.has-date{border-color:rgba(46,204,113,0.4);color:var(--green)}
+.no-groups{font-family:var(--mono);font-size:10px;color:var(--muted);padding:20px;text-align:center;background:var(--bg2);border:1px dashed var(--border);border-radius:10px}
+
+/* ── QUICK DATES ── */
+.quick-dates{display:flex;gap:6px;flex-wrap:wrap}
+.qd{font-family:var(--mono);font-size:10px;padding:6px 11px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;transition:all 0.15s;letter-spacing:0.04em}
+.qd:active{transform:scale(0.95)}
+.qd.active{background:rgba(79,142,247,0.15);border-color:var(--accent);color:var(--accent)}
+
+/* ── REMARKS ── */
+.rmk-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px}
+.rmk-inner{display:flex;gap:10px;padding:13px 14px;align-items:flex-start}
+.rmk-label{font-size:9px;font-family:var(--mono);color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:5px}
+textarea.rmk-ta{background:transparent;border:none;outline:none;color:var(--text);font-family:var(--sans);font-size:13px;resize:none;width:100%;min-height:48px;line-height:1.5}
+textarea.rmk-ta::placeholder{color:var(--muted)}
+
+/* ── WRITE BANNER ── */
+.write-banner{display:flex;align-items:center;gap:8px;padding:9px 13px;border-radius:8px;font-family:var(--mono);font-size:10px;border:1px solid var(--border);background:var(--bg3)}
+.wdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.wdot.green{background:var(--green);box-shadow:0 0 5px var(--green)}
+.wdot.amber{background:var(--amber);box-shadow:0 0 5px var(--amber)}
+.wdot.red{background:var(--red);box-shadow:0 0 5px var(--red)}
+
+/* ── LOG ── */
+.log-header{display:flex;align-items:center;justify-content:space-between}
+.log-title{font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--muted);text-transform:uppercase;padding:0 2px}
+.copy-btn{font-family:var(--mono);font-size:9px;padding:3px 9px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;letter-spacing:0.08em;display:none}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+.log-empty{font-family:var(--mono);font-size:10px;color:var(--muted);padding:6px 2px}
+.log-item{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 13px;display:flex;align-items:flex-start;gap:8px;margin-bottom:5px}
+.log-item.ok{border-color:rgba(46,204,113,0.3)}
+.ldot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.log-body{flex:1;min-width:0}
+.log-main{font-size:12px;font-weight:500}
+.log-meta{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.log-time{font-family:var(--mono);font-size:9px;color:var(--muted);flex-shrink:0}
+
+/* ── BOTTOM ACTION BTN ── */
+.action-wrap{position:fixed;bottom:0;left:0;right:0;padding:10px 14px;padding-bottom:max(18px,env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 28%);z-index:50}
+.action-btn{width:100%;max-width:560px;margin:0 auto;display:block;padding:15px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:0.08em;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 18px rgba(79,142,247,0.28)}
+.action-btn:hover{opacity:0.9}
+.action-btn:active{transform:scale(0.98)}
+.action-btn:disabled{background:var(--bg3);color:var(--muted);box-shadow:none;cursor:not-allowed}
+.action-btn.saving{background:var(--amber)}
+.action-btn.success{background:var(--green)}
+.action-btn.fail{background:var(--red)}
+.action-btn.danger{background:var(--red)}
+
+/* ── MODAL (confirm delete) ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:500;display:flex;align-items:flex-end;justify-content:center}
+.modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:16px 16px 0 0;padding:24px 20px;width:100%;max-width:560px;display:flex;flex-direction:column;gap:14px;padding-bottom:max(24px,env(safe-area-inset-bottom))}
+.modal-title{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--text)}
+.modal-desc{font-size:13px;color:var(--muted);line-height:1.6}
+.modal-actions{display:flex;gap:10px}
+.modal-btn{flex:1;padding:13px;border:none;border-radius:9px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.06em;cursor:pointer;transition:all 0.15s}
+.modal-btn.cancel{background:var(--bg3);color:var(--muted2);border:1px solid var(--border2)}
+.modal-btn.cancel:hover{color:var(--text)}
+.modal-btn.confirm-del{background:rgba(231,76,60,0.15);color:var(--red);border:1px solid rgba(231,76,60,0.4)}
+.modal-btn.confirm-del:hover{background:var(--red);color:#fff}
+
+/* ── TOAST ── */
+.toast{position:fixed;top:68px;left:50%;transform:translateX(-50%) translateY(-16px);background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-family:var(--mono);font-size:11px;color:var(--text);opacity:0;transition:all 0.28s;z-index:600;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:var(--green);color:var(--green);background:rgba(46,204,113,0.1)}
+.toast.err{border-color:var(--red);color:var(--red);background:rgba(231,76,60,0.1)}
+
+/* ── SELECT ALL BTN ── */
+.sel-all-row{display:flex;align-items:center;justify-content:space-between;padding:0 2px}
+.sel-all-btn{font-family:var(--mono);font-size:9px;padding:5px 11px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;letter-spacing:0.06em;transition:all 0.15s}
+.sel-all-btn:hover{color:var(--accent);border-color:var(--accent)}
+
+@media(max-width:380px){.topbar-title{font-size:13px}#clock{font-size:14px}.fval{font-size:12px}}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div class="auth-screen" id="auth-screen">
+  <div class="auth-tag">Meeting Mode</div>
+  <div class="auth-logo">PCS <span>CHAMPO</span></div>
+  <div class="auth-card">
+    <div class="auth-card-title">MEETING MODE ACCESS</div>
+    <div class="auth-desc">Enter the access password to continue.</div>
+    <div class="field-group">
+      <label>Password</label>
+      <input class="auth-input" id="pwd-input" type="password" placeholder="Enter password..." onkeydown="if(event.key==='Enter')checkPassword()" autofocus />
+    </div>
+    <button class="google-btn" id="g-btn" onclick="checkPassword()" style="background:var(--accent);color:#fff;box-shadow:none;font-weight:700">
+      → Enter Meeting Mode
+    </button>
+    <div id="pwd-error" style="font-size:11px;color:var(--red);text-align:center;min-height:16px"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-overlay hidden" id="del-modal">
+  <div class="modal-box">
+    <div class="modal-title">Delete Group?</div>
+    <div class="modal-desc" id="del-modal-desc">This will permanently delete all 17 process rows for this group from PROCESS_TIMELINES. This cannot be undone.</div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeDelModal()">Cancel</button>
+      <button class="modal-btn confirm-del" onclick="confirmDelete()">Delete Group</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-tag">Meeting Mode</div>
+    <div class="topbar-title">PCS <span>CHAMPO</span></div>
+  </div>
+  <div class="topbar-right">
+    <div id="clock">--:--</div>
+    <div class="user-chip hidden" id="user-chip" onclick="signOut()" title="Click to sign out">
+      <span style="font-size:12px">👤</span>
+      <span id="u-name">—</span>
+    </div>
+    <a href="index.html" class="dash-link">← DASH</a>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-groups" onclick="switchTab('groups')">📋 Groups</button>
+  <button class="tab-btn" id="tab-dates" onclick="switchTab('dates')">📅 Dates</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!--  PANEL A: GROUP MANAGER                               -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-groups">
+
+  <div class="write-banner">
+    <div class="wdot amber" id="wdot"></div>
+    <span id="wstatus">Not signed in — sign in to save</span>
+  </div>
+
+  <!-- Buyer + PO selectors -->
+  <div class="slabel">Select Buyer & PO</div>
+  <div class="fcard">
+    <div class="frow">
+      <div class="ficon">🏬</div>
+      <div class="fcontent">
+        <div class="flabel">Buyer</div>
+        <div class="fval ph" id="gm-v-buyer">Tap to select</div>
+      </div>
+      <div class="farrow">▼</div>
+      <select class="ns" id="gm-sel-buyer" onchange="gmOnBuyer()"><option value="">Select buyer...</option></select>
+    </div>
+    <div class="frow">
+      <div class="ficon">📦</div>
+      <div class="fcontent">
+        <div class="flabel">Purchase Order</div>
+        <div class="fval ph" id="gm-v-po">Select buyer first</div>
+      </div>
+      <div class="farrow">▼</div>
+      <select class="ns" id="gm-sel-po" onchange="gmOnPO()" disabled><option value="">Select PO...</option></select>
+    </div>
+  </div>
+
+  <!-- Existing groups for this PO -->
+  <div id="gm-existing-wrap" class="hidden">
+    <div class="slabel" style="margin-bottom:8px">Existing Groups</div>
+    <div id="gm-groups-list"></div>
+  </div>
+
+  <!-- New group creator (shown after PO selected) -->
+  <div id="gm-creator-wrap" class="hidden">
+    <div class="sel-all-row">
+      <div class="slabel">Select SKUs for New Group</div>
+      <button class="sel-all-btn" id="gm-sel-all-btn" onclick="gmToggleAll()">SELECT ALL</button>
+    </div>
+    <div class="sku-grid" id="gm-sku-grid" style="margin-top:8px"></div>
+
+    <!-- Variant owners — shown after SKUs selected -->
+    <div id="gm-variant-wrap" class="hidden" style="margin-top:12px">
+      <div class="slabel" style="margin-bottom:8px">Assign Owners for Variable Processes</div>
+      <div class="variant-section" id="gm-variant-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!--  PANEL B: DATE SETTER                                  -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="panel hidden" id="panel-dates">
+
+  <!-- Buyer + PO -->
+  <div class="slabel">Select Buyer & PO</div>
+  <div class="fcard">
+    <div class="frow">
+      <div class="ficon">🏬</div>
+      <div class="fcontent">
+        <div class="flabel">Buyer</div>
+        <div class="fval ph" id="ds-v-buyer">Tap to select</div>
+      </div>
+      <div class="farrow">▼</div>
+      <select class="ns" id="ds-sel-buyer" onchange="dsOnBuyer()"><option value="">Select buyer...</option></select>
+    </div>
+    <div class="frow">
+      <div class="ficon">📦</div>
+      <div class="fcontent">
+        <div class="flabel">Purchase Order</div>
+        <div class="fval ph" id="ds-v-po">Select buyer first</div>
+      </div>
+      <div class="farrow">▼</div>
+      <select class="ns" id="ds-sel-po" onchange="dsOnPO()" disabled><option value="">Select PO...</option></select>
+    </div>
+    <div class="frow" id="ds-sku-row" style="display:none">
+      <div class="ficon">🏷</div>
+      <div class="fcontent">
+        <div class="flabel">SKUs Covered</div>
+        <div class="fval" id="ds-v-skus" style="white-space:normal;font-size:11px;line-height:1.6;color:var(--muted)">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Process -->
+  <div class="slabel">Select Process</div>
+  <div class="fcard">
+    <div class="frow">
+      <div class="ficon">⚙️</div>
+      <div class="fcontent">
+        <div class="flabel">Process</div>
+        <div class="fval ph" id="ds-v-process">Select PO first</div>
+      </div>
+      <div class="farrow">▼</div>
+      <select class="ns" id="ds-sel-process" onchange="dsOnProcess()" disabled><option value="">Select process...</option></select>
+    </div>
+    <div class="frow">
+      <div class="ficon">👤</div>
+      <div class="fcontent"><div class="flabel">Owner</div><div class="fval ph" id="ds-v-owner">—</div></div>
+    </div>
+    <div class="frow">
+      <div class="ficon">📊</div>
+      <div class="fcontent"><div class="flabel">Current Status</div><div class="fval ph" id="ds-v-status">—</div></div>
+    </div>
+  </div>
+
+  <!-- Date -->
+  <div class="slabel">Commitment Date</div>
+  <div class="quick-dates">
+    <button class="qd" onclick="qDate(0)">Today</button>
+    <button class="qd" onclick="qDate(1)">Tomorrow</button>
+    <button class="qd" onclick="qDate(3)">+3d</button>
+    <button class="qd" onclick="qDate(5)">+5d</button>
+    <button class="qd" onclick="qDate(7)">+1wk</button>
+    <button class="qd" onclick="qDate(10)">+10d</button>
+    <button class="qd" onclick="qDate(14)">+2wk</button>
+  </div>
+  <div class="fcard" style="margin-top:2px">
+    <div class="frow clickable" onclick="openDatePicker()">
+      <div class="ficon">📅</div>
+      <div class="fcontent">
+        <div class="flabel">Planned Date</div>
+        <div class="fval ph" id="ds-v-date">Tap to pick or use quick buttons</div>
+      </div>
+      <div class="farrow">▼</div>
+      <input type="date" class="nd" id="ds-sel-date" onchange="dsOnDate()">
+    </div>
+  </div>
+
+  <!-- Remarks -->
+  <div class="slabel">Remarks</div>
+  <div class="rmk-card">
+    <div class="rmk-inner">
+      <div style="font-size:15px;padding-top:2px">✏️</div>
+      <div style="flex:1">
+        <div class="rmk-label">Owner's remarks / notes</div>
+        <textarea class="rmk-ta" id="ds-rmk" placeholder="Delay reason, commitment, anything the owner says..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Session Log -->
+  <div>
+    <div class="log-header">
+      <div class="log-title">This Session</div>
+      <button class="copy-btn" id="copy-btn" onclick="copyLog()">⎘ COPY ALL</button>
+    </div>
+    <div id="log-list" style="margin-top:8px"><div class="log-empty">No entries yet this session</div></div>
+  </div>
+
+</div>
+
+<!-- BOTTOM ACTION BUTTON -->
+<div class="action-wrap">
+  <button class="action-btn" id="action-btn" onclick="actionClick()" disabled>SIGN IN TO ENABLE</button>
+</div>
+
+<script>
+const SHEET_ID    = '1S2ikmWM_GlWbYVuOlPQBbGEebtnO31qNcc8m7-CTaRU';
+const API_KEY     = 'AIzaSyCQ2IAWSR-cwdxqaxvBlfhwBHUiueu8vmo';
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzmy8svDdayaNa1HO_JFSWagYcNJmk-L3nlzAk-rmHHND0aEHhu9wSA8v0ukeSMWpFg/exec';
+const WEB_APP_PW  = 'pcs2025champo';
+
+// 17 standard processes with variant info
+const PROCESSES = [
+  {seq:1,  name:'Yarn',             variant:'Fixed',   owner:'Miraj',    fixedOwner:true},
+  {seq:2,  name:'Dyeing',           variant:'Fixed',   owner:'Jitender', fixedOwner:true},
+  {seq:3,  name:'Fabric',           variant:'Fixed',   owner:'Miraj',    fixedOwner:true},
+  {seq:4,  name:'Canvas',           variant:'Requirement', owner:'Pawan', fixedOwner:false, options:['Pawan','Miraj']},
+  {seq:5,  name:'Canvas',           variant:'Source',  owner:'Miraj',    fixedOwner:true},
+  {seq:6,  name:'Piping',           variant:'Fixed',   owner:'Pawan',    fixedOwner:true},
+  {seq:7,  name:'Trims',            variant:'Backing/Beads', owner:'Pawan', fixedOwner:false, options:['Pawan','Amit']},
+  {seq:8,  name:'Weaving',          variant:'',        owner:'',         fixedOwner:false, options:['Pawan (Hand Woven)','Somdutt (Machine Woven)'], variantMap:{'Pawan (Hand Woven)':'Hand Woven','Somdutt (Machine Woven)':'Machine Woven'}},
+  {seq:9,  name:'Tufting',          variant:'',        owner:'',         fixedOwner:false, options:['Pawan (Magic Loop)','Sufiyan (Tufted)'], variantMap:{'Pawan (Magic Loop)':'Magic Loop','Sufiyan (Tufted)':'Tufted'}},
+  {seq:10, name:'Knitting',         variant:'Fixed',   owner:'Raj',      fixedOwner:true},
+  {seq:11, name:'Embroidery',       variant:'Fixed',   owner:'Sufiyan',  fixedOwner:true},
+  {seq:12, name:'Printing',         variant:'Fixed',   owner:'Pawan',    fixedOwner:true},
+  {seq:13, name:'Foam Backing',     variant:'Fixed',   owner:'Raj',      fixedOwner:true},
+  {seq:14, name:'Stitching',        variant:'Fixed',   owner:'Pardeep',  fixedOwner:true},
+  {seq:15, name:'Pack & Trims',     variant:'Fixed',   owner:'Imran',    fixedOwner:true},
+  {seq:16, name:'Final Packing',    variant:'Fixed',   owner:'Baljeet',  fixedOwner:true},
+  {seq:17, name:'Final Inspection', variant:'Fixed',   owner:'3rd Party',fixedOwner:true},
+];
+
+// ── STATE ──
+let authed = false;
+let sheetData=[], masterOrders=[];
+let activeTab='groups';
+let log=[];
+
+// Group Manager state
+let gmBuyer=null, gmPO=null;
+let gmSelectedSKUs=[]; // indices into masterOrders filtered by PO
+let gmEditingGroupKey=null; // null = new group, string = editing existing
+let gmDeleteTarget=null; // group key pending delete
+let gmVariantOwners={}; // {seq: ownerString}
+
+// Date Setter state
+let dsBuyer=null, dsPO=null, dsProc=null, dsDate=null, dsRow=null;
+
+// ── CLOCK ──
+setInterval(()=>{document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});},1000);
+document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+
+// ── CONFIG ──
+
+// ── AUTH ──
+function checkPassword(){
+  const pwd = document.getElementById('pwd-input').value.trim();
+  if(pwd !== WEB_APP_PW){
+    document.getElementById('pwd-error').textContent = 'Wrong password. Try again.';
+    document.getElementById('pwd-input').value = '';
+    setTimeout(()=>document.getElementById('pwd-error').textContent='', 2000);
+    return;
+  }
+  sessionStorage.setItem('pcs_authed','1');
+  authed = true;
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('user-chip').classList.remove('hidden');
+  document.getElementById('u-name').textContent = 'Saiyam';
+  document.getElementById('u-avatar').src = '';
+  setWrite('green','✓ Ready — saves go directly to sheet');
+  loadData();
+}
+
+function signOut(){
+  if(!confirm('Sign out?'))return;
+  authed=false;
+  sessionStorage.removeItem('pcs_authed');
+  document.getElementById('user-chip').classList.add('hidden');
+  document.getElementById('auth-screen').classList.remove('hidden');
+  document.getElementById('pwd-input').value='';
+  setWrite('amber','Signed out');
+}
+
+async function webAppWrite(body){
+  if(!WEB_APP_URL){
+    toast('Web App URL not set — check setup','err');
+    throw new Error('Web App URL not configured');
+  }
+  const res = await fetch(WEB_APP_URL, {
+    method:'POST', 
+    body: JSON.stringify({...body, password: WEB_APP_PW}),
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || 'Web App write failed');
+  return data;
+}
+
+// ── LOAD DATA ──
+async function loadData(){
+  
+  if(!SHEET_ID||!API_KEY){toast('Missing config','err');return;}
+  try{
+    const [r1,r2]=await Promise.all([
+      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent('PROCESS_TIMELINES!A:AD')}?key=${API_KEY}`),
+      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent('MASTER_ORDERS!A:Z')}?key=${API_KEY}`)
+    ]);
+    if(!r1.ok){const e=await r1.json();throw new Error(e.error?.message||'Load failed');}
+    sheetData=parsePT((await r1.json()).values||[]);
+    if(r2.ok)masterOrders=parseMO((await r2.json()).values||[]);
+    populateAllBuyers();
+    toast('✓ Data loaded','ok');
+    updateActionBtn();
+  }catch(e){toast('Load error: '+e.message,'err');}
+}
+
+function parsePT(rows){
+  if(rows.length<2)return[];
+  const h=rows[0],idx=n=>h.findIndex(x=>x===n);
+  const I={PO:idx('PO'),BUYER:idx('Buyer'),SKU:idx('SKU'),COLOR:idx('Color'),SIZE:idx('Size'),
+    SEQ:idx('Process_Seq'),PROC:idx('Process_Name'),VAR:idx('Variant'),APP:idx('Applicable'),
+    OWN:idx('Owner'),STAT:idx('Status'),PLANNED:idx('Planned_Date'),
+    PO_F:idx('PO_F'),BUYER_F:idx('Buyer_F'),SKU_F:idx('SKU_F'),GROUP:idx('Group_Key')};
+  return rows.slice(1).map((r,i)=>({
+    row:i+2, po:r[I.PO_F]||r[I.PO]||'', buyer:r[I.BUYER_F]||r[I.BUYER]||'',
+    sku:r[I.SKU_F]||r[I.SKU]||'', color:r[I.COLOR]||'', size:r[I.SIZE]||'',
+    seq:parseInt(r[I.SEQ])||0, proc:r[I.PROC]||'', variant:r[I.VAR]||'',
+    app:r[I.APP]||'NO', owner:r[I.OWN]||'', status:r[I.STAT]||'',
+    planned:r[I.PLANNED]||'', groupKey:r[I.GROUP]||'',
+  }));
+}
+
+function parseMO(rows){
+  if(rows.length<2)return[];
+  const h=rows[0],idx=n=>h.findIndex(x=>x===n);
+  const I={PO:idx('PO'),BUYER:idx('Buyer'),SKU:idx('SKU'),COLOR:idx('Color'),SIZE:idx('Size'),QTY:idx('Order_Qty'),GROUP:idx('Group_Key')};
+  return rows.slice(1)
+    .map((r,i)=>({moRow:i+2, po:String(r[I.PO]||'').trim(), buyer:String(r[I.BUYER]||'').trim(),
+      sku:String(r[I.SKU]||'').trim(), color:String(r[I.COLOR]||'').trim(),
+      size:String(r[I.SIZE]||'').trim(), qty:String(r[I.QTY]||'').trim(),
+      groupKey:String(r[I.GROUP]||'').trim()}))
+    .filter(r=>r.po&&r.sku);
+}
+
+// ── TAB SWITCHING ──
+function switchTab(tab){
+  activeTab=tab;
+  document.getElementById('tab-groups').classList.toggle('active',tab==='groups');
+  document.getElementById('tab-dates').classList.toggle('active',tab==='dates');
+  document.getElementById('panel-groups').classList.toggle('hidden',tab!=='groups');
+  document.getElementById('panel-dates').classList.toggle('hidden',tab!=='dates');
+  updateActionBtn();
+}
+
+// ── POPULATE BUYERS (both panels) ──
+function populateAllBuyers(){
+  // Use masterOrders as source of buyers
+  const buyers=[...new Set(masterOrders.map(r=>r.buyer).filter(Boolean))].sort();
+  ['gm-sel-buyer','ds-sel-buyer'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.innerHTML='<option value="">Select buyer...</option>'+buyers.map(b=>`<option value="${b}">${b}</option>`).join('');
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  GROUP MANAGER
+// ══════════════════════════════════════════════════════════════
+
+function gmOnBuyer(){
+  const buyer=document.getElementById('gm-sel-buyer').value; if(!buyer)return;
+  gmBuyer=buyer; gmPO=null; gmSelectedSKUs=[]; gmEditingGroupKey=null;
+  sv('gm-v-buyer',buyer);
+  sv('gm-v-po','Select PO',true);
+  document.getElementById('gm-existing-wrap').classList.add('hidden');
+  document.getElementById('gm-creator-wrap').classList.add('hidden');
+  // Populate POs for this buyer from masterOrders
+  const pos=[...new Set(masterOrders.filter(r=>r.buyer===buyer).map(r=>r.po))].sort();
+  const sp=document.getElementById('gm-sel-po');
+  sp.innerHTML='<option value="">Select PO...</option>'+pos.map(p=>`<option value="${p}">${p}</option>`).join('');
+  sp.disabled=false;
+  updateActionBtn();
+}
+
+function gmOnPO(){
+  const po=document.getElementById('gm-sel-po').value; if(!po)return;
+  gmPO=po; gmSelectedSKUs=[]; gmEditingGroupKey=null; gmVariantOwners={};
+  sv('gm-v-po',po);
+  renderGMExisting();
+  renderGMSKUGrid();
+  document.getElementById('gm-existing-wrap').classList.remove('hidden');
+  document.getElementById('gm-creator-wrap').classList.remove('hidden');
+  document.getElementById('gm-variant-wrap').classList.add('hidden');
+  updateActionBtn();
+}
+
+function getGroupsForPO(po){
+  // Groups = unique Group_Key values in PROCESS_TIMELINES for this PO
+  const groups={};
+  sheetData.filter(r=>r.po===po&&r.groupKey).forEach(r=>{
+    if(!groups[r.groupKey]) groups[r.groupKey]={key:r.groupKey,po,rows:[],procs:[]};
+    groups[r.groupKey].rows.push(r);
+    if(!groups[r.groupKey].procs.find(p=>p.seq===r.seq))
+      groups[r.groupKey].procs.push({seq:r.seq,name:r.proc,planned:r.planned});
+  });
+  return Object.values(groups);
+}
+
+function getSKUsForGroup(groupKey,po){
+  // Get SKUs from MASTER_ORDERS that are in this group
+  return masterOrders.filter(r=>r.po===po&&r.groupKey===groupKey);
+}
+
+function renderGMExisting(){
+  const groups=getGroupsForPO(gmPO);
+  const wrap=document.getElementById('gm-groups-list');
+  if(!groups.length){
+    wrap.innerHTML='<div class="no-groups">No groups created yet for this PO</div>';
+    return;
+  }
+  wrap.innerHTML=groups.map(g=>{
+    const skus=getSKUsForGroup(g.key,gmPO);
+    const skuLines=skus.length
+      ? skus.map(s=>`<div class="group-sku-item">· ${s.sku}${s.color?' · '+s.color:''}${s.size?' · '+s.size:''}</div>`).join('')
+      : g.rows.filter((r,i,a)=>a.findIndex(x=>x.sku===r.sku)===i).map(r=>`<div class="group-sku-item">· ${r.sku}</div>`).join('');
+    const procChips=g.procs.sort((a,b)=>a.seq-b.seq).map(p=>
+      `<span class="proc-chip${p.planned?' has-date':''}">${p.seq}. ${p.name}${p.planned?' ✓':''}</span>`).join('');
+    return `<div class="group-card">
+      <div class="group-header" onclick="toggleGroupBody('gb-${g.key}')">
+        <div class="group-header-left">
+          <div class="group-key">${g.key}</div>
+          <div class="group-po">PO ${g.po} · ${g.rows.length} process rows</div>
+        </div>
+        <div class="group-actions">
+          <button class="gact-btn edit" onclick="event.stopPropagation();editGroup('${g.key}')">✏️ Edit</button>
+          <button class="gact-btn del" onclick="event.stopPropagation();promptDelete('${g.key}')">🗑 Delete</button>
+        </div>
+      </div>
+      <div class="group-body hidden" id="gb-${g.key}">
+        <div class="slabel" style="font-size:8px;margin-bottom:4px">SKUs in this group</div>
+        <div class="group-sku-list">${skuLines}</div>
+        <div class="slabel" style="font-size:8px;margin:8px 0 4px">Processes</div>
+        <div class="group-proc-list">${procChips}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleGroupBody(id){
+  const el=document.getElementById(id);
+  if(el) el.classList.toggle('hidden');
+}
+
+function renderGMSKUGrid(){
+  const skus=masterOrders.filter(r=>r.po===gmPO);
+  const groups=getGroupsForPO(gmPO);
+  const groupedSKUs=new Set(groups.flatMap(g=>getSKUsForGroup(g.key,gmPO).map(s=>s.sku)));
+  const grid=document.getElementById('gm-sku-grid');
+  grid.innerHTML=skus.map((s,i)=>{
+    const inGroup=groupedSKUs.has(s.sku)&&s.groupKey&&!gmEditingGroupKey;
+    const isSelected=gmSelectedSKUs.includes(i);
+    const badge=s.groupKey&&inGroup?`<span class="sku-badge">${s.groupKey}</span>`:'';
+    return `<div class="sku-card${isSelected?' selected':''}${inGroup&&!isSelected?' in-group':''}" 
+      onclick="${inGroup&&!gmEditingGroupKey?'':'gmToggleSKU('+i+')'}">
+      <div class="sku-chk">${isSelected?'✓':inGroup?'G':''}</div>
+      <div class="sku-info">
+        <div class="sku-name">${s.sku}</div>
+        <div class="sku-sub">${[s.color,s.size,s.qty?'Qty: '+s.qty:''].filter(Boolean).join(' · ')}</div>
+      </div>
+      ${badge}
+    </div>`;
+  }).join('');
+  document.getElementById('gm-sel-all-btn').textContent=
+    gmSelectedSKUs.length===skus.filter((_,i)=>!groupedSKUs.has(masterOrders.filter(r=>r.po===gmPO)[i]?.sku)||gmEditingGroupKey).length
+    ?'DESELECT ALL':'SELECT ALL';
+}
+
+function gmToggleSKU(i){
+  const idx=gmSelectedSKUs.indexOf(i);
+  if(idx===-1) gmSelectedSKUs.push(i);
+  else gmSelectedSKUs.splice(idx,1);
+  renderGMSKUGrid();
+  // Show/hide variant section based on selection
+  if(gmSelectedSKUs.length>0){
+    renderVariantPicker();
+    document.getElementById('gm-variant-wrap').classList.remove('hidden');
+  } else {
+    document.getElementById('gm-variant-wrap').classList.add('hidden');
+  }
+  updateActionBtn();
+}
+
+function gmToggleAll(){
+  const skus=masterOrders.filter(r=>r.po===gmPO);
+  const groups=getGroupsForPO(gmPO);
+  const groupedSKUs=new Set(groups.flatMap(g=>getSKUsForGroup(g.key,gmPO).map(s=>s.sku)));
+  const available=skus.map((_,i)=>i).filter(i=>!groupedSKUs.has(skus[i].sku)||gmEditingGroupKey);
+  if(gmSelectedSKUs.length===available.length) gmSelectedSKUs=[];
+  else gmSelectedSKUs=[...available];
+  renderGMSKUGrid();
+  if(gmSelectedSKUs.length>0){renderVariantPicker();document.getElementById('gm-variant-wrap').classList.remove('hidden');}
+  else document.getElementById('gm-variant-wrap').classList.add('hidden');
+  updateActionBtn();
+}
+
+function renderVariantPicker(){
+  const variableProcs=PROCESSES.filter(p=>!p.fixedOwner);
+  const list=document.getElementById('gm-variant-list');
+  list.innerHTML=variableProcs.map(p=>{
+    const cur=gmVariantOwners[p.seq]||p.options[0];
+    return `<div class="variant-row">
+      <div class="variant-proc">${p.seq}. ${p.name}<span>${p.variant||'Select variant'}</span></div>
+      <select class="variant-select" onchange="gmSetVariant(${p.seq},this.value)">
+        ${p.options.map(o=>`<option value="${o}"${o===cur?' selected':''}>${o}</option>`).join('')}
+      </select>
+    </div>`;
+  }).join('');
+  // Set defaults
+  variableProcs.forEach(p=>{ if(!gmVariantOwners[p.seq]) gmVariantOwners[p.seq]=p.options[0]; });
+}
+
+function gmSetVariant(seq,val){
+  gmVariantOwners[seq]=val;
+}
+
+function editGroup(groupKey){
+  gmEditingGroupKey=groupKey;
+  // Pre-select the SKUs that are in this group
+  const groupSKUs=getSKUsForGroup(groupKey,gmPO).map(s=>s.sku);
+  const skus=masterOrders.filter(r=>r.po===gmPO);
+  gmSelectedSKUs=skus.map((_,i)=>i).filter(i=>groupSKUs.includes(skus[i].sku));
+  renderGMSKUGrid();
+  renderVariantPicker();
+  document.getElementById('gm-variant-wrap').classList.remove('hidden');
+  // Pre-fill variant owners from existing rows
+  const existingRows=sheetData.filter(r=>r.po===gmPO&&r.groupKey===groupKey);
+  existingRows.forEach(r=>{
+    if(!PROCESSES.find(p=>p.seq===r.seq)?.fixedOwner){
+      // reconstruct display value
+      const p=PROCESSES.find(p=>p.seq===r.seq);
+      if(p&&p.variantMap){
+        const display=Object.entries(p.variantMap).find(([k,v])=>v===r.variant)?.[0]||p.options[0];
+        gmVariantOwners[r.seq]=display;
+      } else if(p) {
+        gmVariantOwners[r.seq]=r.owner;
+      }
+    }
+  });
+  renderVariantPicker();
+  updateActionBtn();
+  // Scroll to creator
+  document.getElementById('gm-creator-wrap').scrollIntoView({behavior:'smooth'});
+  toast('Editing group '+groupKey+' — modify SKUs and confirm','ok');
+}
+
+function promptDelete(groupKey){
+  gmDeleteTarget=groupKey;
+  const rows=sheetData.filter(r=>r.po===gmPO&&r.groupKey===groupKey);
+  document.getElementById('del-modal-desc').textContent=
+    `This will delete all ${rows.length} process rows for group "${groupKey}" (PO ${gmPO}) from PROCESS_TIMELINES. Cannot be undone.`;
+  document.getElementById('del-modal').classList.remove('hidden');
+}
+
+function closeDelModal(){
+  document.getElementById('del-modal').classList.add('hidden');
+  gmDeleteTarget=null;
+}
+
+async function confirmDelete(){
+  if(!gmDeleteTarget)return;
+  const rows=sheetData.filter(r=>r.po===gmPO&&r.groupKey===gmDeleteTarget);
+  closeDelModal();
+  try{
+    
+    // Clear rows in PROCESS_TIMELINES
+    await webAppWrite({action:'clearRows', sheet:'PROCESS_TIMELINES', rows:rows.map(r=>r.row)});
+    // Clear Group_Key in MASTER_ORDERS
+    const groupSKUs=getSKUsForGroup(gmDeleteTarget,gmPO);
+    if(groupSKUs.length){
+      await webAppWrite({action:'updateGroupKey', moRows:groupSKUs.map(s=>({row:s.moRow,groupKey:''}))});
+    }
+    toast(`✓ Group ${gmDeleteTarget} deleted`,'ok');
+    await loadData();
+    renderGMExisting();
+    renderGMSKUGrid();
+  }catch(e){toast('Delete error: '+e.message,'err');}
+}
+
+// ── CREATE / UPDATE GROUP ──
+async function createOrUpdateGroup(){
+  if(!gmPO||gmSelectedSKUs.length===0)return;
+  
+  const skus=masterOrders.filter(r=>r.po===gmPO);
+  const selectedSKUData=gmSelectedSKUs.map(i=>skus[i]);
+  // Generate group key or use existing
+  const groupKey=gmEditingGroupKey||generateGroupKey(gmPO);
+  const buyer=gmBuyer;
+
+  // If editing — first delete old rows for this group
+  if(gmEditingGroupKey){
+    const oldRows=sheetData.filter(r=>r.po===gmPO&&r.groupKey===gmEditingGroupKey);
+    if(oldRows.length){
+      await webAppWrite({action:'clearRows', sheet:'PROCESS_TIMELINES', rows:oldRows.map(r=>r.row)});
+  }
+
+  // Build 17 rows to append
+  // One row per process. PO/Buyer/SKU columns show first SKU; all share same group key.
+  // For multiple SKUs we write the SKU list as comma-separated in SKU column, Color/Size as first SKU's
+  const firstSKU=selectedSKUData[0];
+  const skuStr=selectedSKUData.map(s=>s.sku).join(', ');
+  const colorStr=selectedSKUData.map(s=>s.color).filter(Boolean).join(', ');
+  const sizeStr=[...new Set(selectedSKUData.map(s=>s.size).filter(Boolean))].join(', ');
+  const qtyTotal=selectedSKUData.reduce((sum,s)=>sum+(parseInt(s.qty)||0),0);
+
+  const newRows=PROCESSES.map(p=>{
+    let owner=p.owner, variant=p.variant;
+    if(!p.fixedOwner){
+      const selected=gmVariantOwners[p.seq]||p.options?.[0]||'';
+      if(p.variantMap&&p.variantMap[selected]){variant=p.variantMap[selected];owner=selected.split(' ')[0];}
+      else{owner=selected;variant=p.variant||'Fixed';}
+    }
+    // Applicable: processes that need selection are NO by default except key ones
+    const applicable=(['YES'].includes(p.variant)||p.fixedOwner)?'YES':'NO';
+    return [
+      gmPO, buyer, skuStr, colorStr, sizeStr, qtyTotal,
+      p.seq, p.name, variant, applicable, owner,
+      '','','',0,'','',firstSKU?.shipStart||'',firstSKU?.shipEnd||','',
+      '','','','','','',groupKey,'',''
+    ];
+  });
+
+  try{
+    // Append 17 rows to PROCESS_TIMELINES
+    await webAppWrite({action:'appendRows', sheet:'PROCESS_TIMELINES', rows:newRows});
+    // Update Group_Key in MASTER_ORDERS
+    await webAppWrite({action:'updateGroupKey', moRows:selectedSKUData.map(s=>({row:s.moRow,groupKey}))});
+    const verb=gmEditingGroupKey?'Updated':'Created';
+    toast(`✓ ${verb} group ${groupKey} — ${newRows.length} rows written`,'ok');
+    gmEditingGroupKey=null; gmSelectedSKUs=[]; gmVariantOwners={};
+    await loadData();
+    renderGMExisting();
+    renderGMSKUGrid();
+    document.getElementById('gm-variant-wrap').classList.add('hidden');
+    updateActionBtn();
+  }catch(e){toast('Error: '+e.message,'err');}
+}
+
+function generateGroupKey(po){
+  const existing=getGroupsForPO(po);
+  const n=existing.length+1;
+  return `${po}-G${String(n).padStart(2,'0')}`;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  DATE SETTER
+// ══════════════════════════════════════════════════════════════
+
+function dsOnBuyer(){
+  const buyer=document.getElementById('ds-sel-buyer').value; if(!buyer)return;
+  dsBuyer=buyer; dsPO=null; dsProc=null; dsRow=null; dsDate=null;
+  sv('ds-v-buyer',buyer); sv('ds-v-po','Select PO',true);
+  sv('ds-v-process','Select PO first',true); sv('ds-v-owner','—',true); sv('ds-v-status','—',true);
+  document.getElementById('ds-sku-row').style.display='none';
+  const pos=[...new Set(sheetData.filter(r=>r.buyer===buyer&&r.po).map(r=>r.po))].sort();
+  const sp=document.getElementById('ds-sel-po');
+  sp.innerHTML='<option value="">Select PO...</option>'+pos.map(p=>`<option value="${p}">${p}</option>`).join('');
+  sp.disabled=false;
+  document.getElementById('ds-sel-process').innerHTML='<option value="">Select process...</option>';
+  document.getElementById('ds-sel-process').disabled=true;
+  updateActionBtn();
+}
+
+function dsOnPO(){
+  const po=document.getElementById('ds-sel-po').value; if(!po)return;
+  dsPO=po; dsProc=null; dsRow=null;
+  sv('ds-v-po',po); sv('ds-v-process','Tap to select process',true);
+  sv('ds-v-owner','—',true); sv('ds-v-status','—',true);
+  // SKU info from masterOrders
+  const skuSource=masterOrders.filter(r=>r.po===po).length?masterOrders.filter(r=>r.po===po):[];
+  const skuRow=document.getElementById('ds-sku-row');
+  if(skuSource.length){
+    document.getElementById('ds-v-skus').innerHTML=skuSource.map(s=>{
+      let t=s.sku; if(s.color)t+=' · '+s.color; if(s.size)t+=' · '+s.size; if(s.qty)t+=' · Qty:'+s.qty;
+      return `<div style="padding:2px 0">${t}</div>`;
+    }).join('');
+    skuRow.style.display='flex';
+  } else skuRow.style.display='none';
+  // Populate processes from PT
+  const seen=new Set(), procs=[];
+  sheetData.filter(r=>r.po===po&&r.app==='YES'&&r.proc).sort((a,b)=>a.seq-b.seq).forEach(r=>{
+    if(!seen.has(r.seq)){seen.add(r.seq);procs.push(r);}
+  });
+  const sp=document.getElementById('ds-sel-process');
+  sp.innerHTML='<option value="">Select process...</option>'+
+    procs.map(r=>`<option value="${r.seq}">${r.seq}. ${r.proc}${r.planned?' ✓':''}</option>`).join('');
+  sp.disabled=false;
+  updateActionBtn();
+}
+
+function dsOnProcess(){
+  const seq=parseInt(document.getElementById('ds-sel-process').value); if(!seq)return;
+  const row=sheetData.find(r=>r.po===dsPO&&r.seq===seq&&r.app==='YES');
+  if(!row)return;
+  dsProc=row.proc; dsRow=row.row;
+  sv('ds-v-process',`${row.seq}. ${row.proc}`);
+  sv('ds-v-owner',row.owner||'—',!row.owner);
+  const el=document.getElementById('ds-v-status');
+  el.textContent=row.status||'—'; el.className='fval';
+  el.style.color=row.status==='DELAY'?'var(--red)':row.status==='IN PROGRESS'?'var(--amber)':row.status==='ON TIME'?'var(--green)':'var(--muted)';
+  updateActionBtn();
+}
+
+function dsOnDate(){
+  const v=document.getElementById('ds-sel-date').value; if(!v)return;
+  dsDate=v; sv('ds-v-date',fmtFull(v));
+  document.querySelectorAll('.qd').forEach(b=>b.classList.remove('active'));
+  updateActionBtn();
+}
+
+function qDate(n){
+  const d=new Date(); d.setDate(d.getDate()+n);
+  const iso=d.toISOString().split('T')[0];
+  document.getElementById('ds-sel-date').value=iso; dsDate=iso;
+  sv('ds-v-date',fmtFull(iso));
+  document.querySelectorAll('.qd').forEach((b,i)=>b.classList.toggle('active',[0,1,3,5,7,10,14][i]===n));
+  updateActionBtn();
+}
+
+function openDatePicker(){
+  const el=document.getElementById('ds-sel-date');
+  try{el.showPicker();}catch(e){el.focus();}
+}
+
+async function saveDate(){
+  if(!dsPO||!dsProc||!dsDate||!dsRow)return;
+  const remarks=document.getElementById('ds-rmk').value.trim();
+  const btn=document.getElementById('action-btn');
+  btn.classList.add('saving'); btn.textContent='SAVING...'; btn.disabled=true;
+  try{
+    const ds=new Date(dsDate+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
+    const ds2=new Date(dsDate+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
+    const updates=[{sheet:'PROCESS_TIMELINES',row:dsRow,col:13,value:ds2}];
+    if(remarks) updates.push({sheet:'PROCESS_TIMELINES',row:dsRow,col:20,value:remarks});
+    await webAppWrite({action:'writeCells', updates});
+    addLog({po:dsPO,proc:dsProc,date:dsDate,remarks,row:dsRow,status:'ok'});
+    btn.classList.remove('saving'); btn.classList.add('success');
+    btn.textContent='✓ SAVED TO SHEET';
+    toast(`✓ ${dsProc} — ${fmtShort(dsDate)}`,'ok');
+    setTimeout(()=>{btn.classList.remove('success');dsReset();},1600);
+  }catch(e){
+    btn.classList.remove('saving'); btn.classList.add('fail');
+    btn.textContent='✗ FAILED — TAP TO RETRY'; btn.disabled=false;
+    toast('Error: '+e.message,'err');
+    setTimeout(()=>{btn.classList.remove('fail');updateActionBtn();},3000);
+  }
+}
+
+function dsReset(){
+  dsProc=null; dsDate=null; dsRow=null;
+  document.getElementById('ds-sel-process').value='';
+  document.getElementById('ds-sel-date').value='';
+  document.getElementById('ds-rmk').value='';
+  sv('ds-v-process','Tap to select process',true);
+  sv('ds-v-owner','—',true); sv('ds-v-status','—',true);
+  sv('ds-v-date','Tap to pick or use quick buttons',true);
+  document.querySelectorAll('.qd').forEach(b=>b.classList.remove('active'));
+  updateActionBtn();
+}
+
+// ── ACTION BUTTON ──
+function actionClick(){
+  if(activeTab==='groups') createOrUpdateGroup();
+  else saveDate();
+}
+
+function updateActionBtn(){
+  const btn=document.getElementById('action-btn');
+  const authed=!!token;
+  if(!authed){btn.textContent='ENTER PASSWORD FIRST';btn.disabled=true;return;}
+  if(activeTab==='groups'){
+    const ready=gmPO&&gmSelectedSKUs.length>0;
+    btn.disabled=!ready;
+    if(!gmPO) btn.textContent='SELECT PO FIRST';
+    else if(!ready) btn.textContent='SELECT SKUS TO GROUP';
+    else btn.textContent=gmEditingGroupKey?`UPDATE GROUP ${gmEditingGroupKey}`:`CREATE GROUP — ${gmSelectedSKUs.length} SKU${gmSelectedSKUs.length>1?'s':''}`;
+  } else {
+    const ready=dsPO&&dsProc&&dsDate&&!!dsRow;
+    btn.disabled=!ready;
+    if(!authed) btn.textContent='SIGN IN TO ENABLE';
+    else if(ready) btn.textContent=`SAVE — ${dsProc} | ${fmtShort(dsDate)}`;
+    else btn.textContent='SELECT PO + PROCESS + DATE TO SAVE';
+  }
+}
+
+// ── LOG ──
+function addLog(e){
+  e.time=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  log.unshift(e); renderLog();
+  if(log.length===1) document.getElementById('copy-btn').style.display='block';
+}
+function renderLog(){
+  const el=document.getElementById('log-list');
+  if(!log.length){el.innerHTML='<div class="log-empty">No entries yet this session</div>';return;}
+  el.innerHTML=log.map(e=>`
+    <div class="log-item ok">
+      <div class="ldot" style="background:var(--green)"></div>
+      <div class="log-body">
+        <div class="log-main">${e.proc} — PO ${e.po}</div>
+        <div class="log-meta">${fmtShort(e.date)}${e.remarks?' · "'+e.remarks.slice(0,50)+'"':''}</div>
+      </div>
+      <div class="log-time">${e.time}</div>
+    </div>`).join('');
+}
+function copyLog(){
+  const txt=['PO\tProcess\tDate\tRemarks',...log.map(e=>`${e.po}\t${e.proc}\t${e.date}\t${e.remarks||''}`)].join('\n');
+  navigator.clipboard.writeText(txt).then(()=>toast('Copied','ok'));
+}
+
+// ── HELPERS ──
+function sv(id,text,ph=false){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.textContent=text; el.className=ph?'fval ph':'fval';
+  if(!ph)el.style.color='';
+}
+function fmtShort(iso){return new Date(iso+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short'});}
+function fmtFull(iso){return new Date(iso+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});}
+function setWrite(color,msg){document.getElementById('wdot').className='wdot '+color;document.getElementById('wstatus').textContent=msg;}
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+type;
+  setTimeout(()=>t.className='toast',2800);
+}
+
+// ── BOOT ──
+window.addEventListener('load',()=>{
+  // Auto-login if already authenticated this session
+  if(sessionStorage.getItem('pcs_authed')==='1'){
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('user-chip').classList.remove('hidden');
+    document.getElementById('u-name').textContent='Saiyam';
+    setWrite('green','✓ Ready — saves go directly to sheet');
+    loadData();
+  }
+  updateActionBtn();
+});
+</script>
+</body>
+</html>
