@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Meeting Mode — PCS CHAMPO</title>
+<style>
+:root {
+  --bg:#0D0F14; --bg2:#13161E; --bg3:#1A1E2A; --bg4:#20263A;
+  --border:#252A38; --border2:#2E3650; --text:#E8EAF0; --muted:#5A6070; --muted2:#7A8090;
+  --accent:#4F8EF7; --green:#2ECC71; --red:#E74C3C; --amber:#F39C12;
+  --mono:'Courier New',monospace; --sans:system-ui,sans-serif;
+}
+body.light {
+  --bg:#F4F5F7; --bg2:#FFFFFF; --bg3:#ECEEF2; --bg4:#E2E5EB;
+  --border:#D8DCE6; --border2:#C4CAD8; --text:#1A1E2A; --muted:#8A92A6; --muted2:#6B748A;
+}
+.theme-btn{font-family:var(--mono);font-size:11px;padding:5px 9px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;flex-shrink:0}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden}
+.hidden{display:none!important}
+
+/* AUTH */
+.auth-screen{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:16px}
+.auth-tag{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase}
+.auth-logo{font-family:var(--mono);font-size:22px;font-weight:700}
+.auth-logo span{color:var(--accent)}
+.auth-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:26px 20px;width:100%;max-width:420px;display:flex;flex-direction:column;gap:16px}
+.auth-card-title{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-align:center}
+.field-group{display:flex;flex-direction:column;gap:5px}
+.field-group label{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase}
+.auth-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:14px;padding:13px 12px;outline:none;transition:border-color 0.2s}
+.auth-input:focus{border-color:var(--accent)}
+.enter-btn{width:100%;padding:14px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:0.08em;cursor:pointer}
+.pwd-err{font-size:11px;color:var(--red);text-align:center;min-height:16px}
+
+/* TOPBAR */
+.topbar{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0}
+.topbar-tag{font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--accent);text-transform:uppercase}
+.topbar-title{font-family:var(--mono);font-size:15px;font-weight:700}
+.topbar-title span{color:var(--accent)}
+.topbar-right{display:flex;align-items:center;gap:8px}
+#clock{font-family:var(--mono);font-size:15px;font-weight:700}
+.user-chip{font-family:var(--mono);font-size:9px;color:var(--green);background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.25);border-radius:6px;padding:4px 10px;cursor:pointer}
+.dash-link{font-family:var(--mono);font-size:9px;padding:5px 9px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--muted);text-decoration:none}
+
+/* TABS */
+.tab-bar{display:flex;background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0}
+.tab-btn{flex:1;padding:12px 8px;font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* PANEL */
+.panel{flex:1;display:flex;flex-direction:column;padding:14px 14px 110px;gap:12px;max-width:620px;width:100%;margin:0 auto;overflow-y:auto}
+
+/* SECTION LABEL */
+.slabel{font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);padding:0 2px}
+
+/* FIELD CARDS */
+.fcard{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.frow{display:flex;align-items:center;padding:0 14px;min-height:50px;border-bottom:1px solid var(--border);gap:10px;position:relative}
+.frow:last-child{border-bottom:none}
+.ficon{font-size:13px;flex-shrink:0;width:20px;text-align:center;font-family:var(--mono);color:var(--muted)}
+.fcontent{flex:1;display:flex;flex-direction:column;gap:1px;min-width:0}
+.flabel{font-size:9px;font-family:var(--mono);color:var(--muted);letter-spacing:0.1em;text-transform:uppercase}
+.fval{font-size:13px;font-weight:500;color:var(--text)}
+.fval.ph{color:var(--muted);font-weight:400;font-size:12px}
+.farrow{font-size:10px;color:var(--muted);flex-shrink:0}
+select.ns,input[type="date"].nd{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;font-size:16px;z-index:2}
+select.ns:disabled{cursor:not-allowed}
+
+/* SKU SELECTION */
+.sku-grid{display:flex;flex-direction:column;gap:6px}
+.sku-card{background:var(--bg2);border:2px solid var(--border);border-radius:10px;padding:11px 13px;cursor:pointer;display:flex;align-items:center;gap:11px;transition:border-color 0.15s}
+.sku-card.selected{border-color:var(--accent);background:rgba(79,142,247,0.07)}
+.sku-card.in-group{border-color:var(--green);opacity:0.5;cursor:default;background:rgba(39,217,138,0.06)}
+.sku-chk{width:22px;height:22px;border-radius:6px;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;transition:all 0.15s}
+.sku-card.selected .sku-chk{background:var(--accent);border-color:var(--accent);color:#fff}
+.sku-card.in-group .sku-chk{background:var(--green);border-color:var(--green);color:#fff;font-size:9px}
+.sku-info{flex:1;min-width:0}
+.sku-name{font-size:13px;font-weight:600}
+.sku-meta{font-size:10px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+.sku-badge{font-size:9px;font-family:var(--mono);padding:2px 7px;border-radius:4px;background:rgba(243,156,18,0.12);color:var(--amber);border:1px solid rgba(243,156,18,0.3);white-space:nowrap;flex-shrink:0}
+
+/* PROCESS STACK */
+.proc-stack{display:flex;flex-direction:column;gap:8px}
+.proc-row{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color 0.2s}
+.proc-row.applicable{border-color:var(--border2)}
+.proc-row.not-applicable{opacity:0.45}
+.proc-header{display:flex;align-items:center;padding:10px 13px;gap:10px;border-bottom:1px solid var(--border)}
+.proc-row.not-applicable .proc-header{border-bottom:none}
+.proc-num{font-family:var(--mono);font-size:9px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
+.proc-name{font-size:13px;font-weight:600;flex:1}
+.proc-variant-tag{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:4px;background:var(--bg3);border:1px solid var(--border2);color:var(--muted2)}
+.app-toggle{display:flex;gap:0;flex-shrink:0}
+.app-btn{font-family:var(--mono);font-size:9px;padding:5px 10px;border:1px solid var(--border2);background:var(--bg3);color:var(--muted);cursor:pointer;transition:all 0.15s}
+.app-btn:first-child{border-radius:6px 0 0 6px}
+.app-btn:last-child{border-radius:0 6px 6px 0;border-left:none}
+.app-btn.yes.active{background:rgba(46,204,113,0.2);border-color:var(--green);color:var(--green)}
+.app-btn.no.active{background:rgba(231,76,60,0.15);border-color:var(--red);color:var(--red)}
+.proc-body{display:flex;flex-direction:column;gap:0}
+.proc-field{display:flex;align-items:center;padding:9px 13px;border-bottom:1px solid var(--border);gap:10px;position:relative;min-height:44px;cursor:pointer}
+.proc-field:last-child{border-bottom:none}
+.pf-label{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;width:52px;flex-shrink:0}
+.pf-val{flex:1;font-size:12px;font-weight:500;color:var(--text)}
+.pf-val.ph{color:var(--muted);font-weight:400}
+.pf-arrow{font-size:9px;color:var(--muted);flex-shrink:0}
+
+/* EXISTING GROUPS */
+.group-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:8px}
+.group-header{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;cursor:pointer;gap:10px}
+.group-key-lbl{font-family:var(--mono);font-size:10px;color:var(--accent);font-weight:700}
+.group-sub{font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+.group-actions{display:flex;gap:6px;flex-shrink:0}
+.gact-btn{font-family:var(--mono);font-size:9px;padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--muted2);cursor:pointer}
+.group-body{padding:10px 14px 13px;display:flex;flex-direction:column;gap:6px}
+.group-sku-item{font-size:11px;color:var(--muted2);font-family:var(--mono);padding:1px 0}
+.proc-pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.proc-pill{font-family:var(--mono);font-size:9px;padding:2px 7px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--muted)}
+.proc-pill.done{border-color:rgba(46,204,113,0.4);color:var(--green)}
+.proc-pill.na{opacity:0.4}
+.proc-rmk{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--sans);font-size:12px;resize:none;line-height:1.5;min-height:36px;padding:0}
+.proc-rmk::placeholder{color:var(--muted)}
+.proc-rmk-wrap{padding:9px 13px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:flex-start}
+.proc-rmk-wrap:last-child{border-bottom:none}
+.overall-rmk-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:13px 14px}
+.no-groups{font-family:var(--mono);font-size:10px;color:var(--muted);padding:18px;text-align:center;border:1px dashed var(--border);border-radius:10px}
+
+/* QUICK DATES */
+.quick-dates{display:flex;gap:5px;flex-wrap:wrap}
+.qd{font-family:var(--mono);font-size:10px;padding:6px 11px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer}
+.qd.active{background:rgba(79,142,247,0.15);border-color:var(--accent);color:var(--accent)}
+
+/* REMARKS */
+.rmk-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:13px 14px}
+.rmk-label{font-size:9px;font-family:var(--mono);color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:5px}
+textarea.rmk-ta{background:transparent;border:none;outline:none;color:var(--text);font-family:var(--sans);font-size:13px;resize:none;width:100%;min-height:44px;line-height:1.5}
+textarea.rmk-ta::placeholder{color:var(--muted)}
+
+/* WRITE BANNER */
+.write-banner{display:flex;align-items:center;gap:8px;padding:9px 13px;border-radius:8px;font-family:var(--mono);font-size:10px;border:1px solid var(--border);background:var(--bg3)}
+.wdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.wdot.green{background:var(--green);box-shadow:0 0 5px var(--green)}
+.wdot.amber{background:var(--amber);box-shadow:0 0 5px var(--amber)}
+.wdot.red{background:var(--red)}
+
+/* LOG */
+.log-empty{font-family:var(--mono);font-size:10px;color:var(--muted);padding:6px 2px}
+.log-item{background:var(--bg2);border:1px solid rgba(46,204,113,0.3);border-radius:8px;padding:9px 13px;display:flex;align-items:flex-start;gap:8px;margin-bottom:5px}
+.ldot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:5px}
+.log-body{flex:1;min-width:0}
+.log-main{font-size:12px;font-weight:500}
+.log-meta{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px}
+.log-time{font-family:var(--mono);font-size:9px;color:var(--muted);flex-shrink:0}
+.copy-btn{font-family:var(--mono);font-size:9px;padding:3px 9px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;display:none}
+
+/* BOTTOM ACTION */
+.action-wrap{position:fixed;bottom:0;left:0;right:0;padding:10px 14px;padding-bottom:max(18px,env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 30%);z-index:50}
+.action-btn{width:100%;max-width:620px;margin:0 auto;display:block;padding:15px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:0.08em;cursor:pointer;transition:all 0.2s}
+.action-btn:disabled{background:var(--bg3);color:var(--muted);cursor:not-allowed}
+.action-btn.saving{background:var(--amber)}
+.action-btn.success{background:var(--green)}
+.action-btn.fail{background:var(--red)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:500;display:flex;align-items:flex-end;justify-content:center}
+.modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:16px 16px 0 0;padding:24px 20px;width:100%;max-width:560px;display:flex;flex-direction:column;gap:14px;padding-bottom:max(24px,env(safe-area-inset-bottom))}
+.modal-title{font-family:var(--mono);font-size:13px;font-weight:700}
+.modal-desc{font-size:13px;color:var(--muted);line-height:1.6}
+.modal-actions{display:flex;gap:10px}
+.modal-btn{flex:1;padding:13px;border:none;border-radius:9px;font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer}
+.modal-btn.cancel{background:var(--bg3);color:var(--muted2);border:1px solid var(--border2)}
+.modal-btn.confirm-del{background:rgba(231,76,60,0.15);color:var(--red);border:1px solid rgba(231,76,60,0.4)}
+
+/* TOAST */
+.toast{position:fixed;top:64px;left:50%;transform:translateX(-50%) translateY(-16px);background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-family:var(--mono);font-size:11px;opacity:0;transition:all 0.28s;z-index:600;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:var(--green);color:var(--green);background:rgba(46,204,113,0.1)}
+.toast.err{border-color:var(--red);color:var(--red);background:rgba(231,76,60,0.1)}
+
+.sel-all-row{display:flex;align-items:center;justify-content:space-between;padding:0 2px}
+.sel-all-btn{font-family:var(--mono);font-size:9px;padding:5px 11px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer}
+.step-divider{display:flex;align-items:center;gap:10px;padding:2px 0}
+.step-divider-line{flex:1;height:1px;background:var(--border)}
+.step-divider-txt{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;white-space:nowrap}
+/* Sub-section proc fields (accessories / embroidery details) */
+.proc-field input[type="text"]{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:12px;font-family:var(--sans);padding:0}
+.proc-field input[type="text"]::placeholder{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div class="auth-screen" id="auth-screen">
+  <div class="auth-tag">Meeting Mode</div>
+  <div class="auth-logo">PCS <span>CHAMPO</span></div>
+  <div class="auth-card">
+    <div class="auth-card-title">MEETING MODE ACCESS</div>
+    <div class="field-group">
+      <label>Password</label>
+      <input class="auth-input" id="pwd-input" type="password" placeholder="Enter password..." autofocus onkeydown="if(event.key==='Enter')checkPassword()">
+    </div>
+    <button class="enter-btn" onclick="checkPassword()">ENTER MEETING MODE</button>
+    <div class="pwd-err" id="pwd-err"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- DELETE MODAL -->
+<div class="modal-overlay hidden" id="del-modal">
+  <div class="modal-box">
+    <div class="modal-title">Delete Group?</div>
+    <div class="modal-desc" id="del-modal-desc"></div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeDelModal()">Cancel</button>
+      <button class="modal-btn confirm-del" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div>
+    <div class="topbar-tag">Meeting Mode</div>
+    <div class="topbar-title">PCS <span>CHAMPO</span></div>
+  </div>
+  <div class="topbar-right">
+    <div id="clock">--:--</div>
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">☀</button>
+    <div class="user-chip hidden" id="user-chip" onclick="signOut()">Saiyam</div>
+    <a href="index.html" class="dash-link">DASH</a>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-groups" onclick="switchTab('groups')">Groups</button>
+  <button class="tab-btn" id="tab-dates" onclick="switchTab('dates')">Dates</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- PANEL: GROUPS                                   -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="panel" id="panel-groups">
+
+  <div class="write-banner">
+    <div class="wdot amber" id="wdot"></div>
+    <span id="wstatus">Not signed in</span>
+  </div>
+
+  <!-- Step 1: Buyer + PO -->
+  <div class="slabel">Step 1 — Select Buyer & PO</div>
+  <div class="fcard">
+    <div class="frow">
+      <div class="ficon">B</div>
+      <div class="fcontent">
+        <div class="flabel">Buyer</div>
+        <div class="fval ph" id="gm-v-buyer">Tap to select</div>
+      </div>
+      <div class="farrow">▼</div>
+      <select class="ns" id="gm-sel-buyer" onchange="gmOnBuyer()"><option value="">Select buyer...</option></select>
+    </div>
+    <div class="frow">
+      <div class="ficon">P</div>
+      <div class="fcontent">
+        <div class="flabel">Purchase Order</div>
+        <div class="fval ph" id="gm-v-po">Select buyer first</div>
+      </div>
+      <div class="farrow">▼</div>
+      <select class="ns" id="gm-sel-po" onchange="gmOnPO()" disabled><option value="">Select PO...</option></select>
+    </div>
+  </div>
+
+  <!-- H&M Category (only shown when H&M selected) -->
+  <div id="gm-hm-section" class="hidden">
+    <div class="slabel">H&amp;M Category</div>
+    <div class="fcard" style="margin-top:6px">
+      <div class="frow" style="gap:12px;justify-content:space-between">
+        <div class="fcontent">
+          <div class="flabel">Category</div>
+          <div class="fval ph" id="gm-v-category">Select category</div>
+        </div>
+        <div class="app-toggle" id="gm-cat-toggle">
+          <button class="app-btn" id="gm-cat-online" onclick="gmSetCategory('Online')">Online</button>
+          <button class="app-btn" id="gm-cat-shop" onclick="gmSetCategory('Shop')">Shop</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Existing groups -->
+  <div id="gm-existing-wrap" class="hidden">
+    <div class="slabel" style="margin-bottom:8px">Existing Groups for this PO</div>
+    <div id="gm-groups-list"></div>
+  </div>
+
+  <!-- Step 2: SKU Selection -->
+  <div id="gm-sku-section" class="hidden">
+    <div class="step-divider">
+      <div class="step-divider-line"></div>
+      <div class="step-divider-txt">Step 2 — Select SKUs</div>
+      <div class="step-divider-line"></div>
+    </div>
+    <div style="height:8px"></div>
+    <div class="sel-all-row" style="margin-bottom:8px">
+      <div class="slabel">Select SKUs for this group</div>
+      <button class="sel-all-btn" id="gm-sel-all-btn" onclick="gmToggleAll()">SELECT ALL</button>
+    </div>
+    <div class="sku-grid" id="gm-sku-grid"></div>
+  </div>
+
+  <!-- Step 3: Process Stack -->
+  <div id="gm-proc-section" class="hidden">
+    <div class="step-divider" style="margin-top:4px">
+      <div class="step-divider-line"></div>
+      <div class="step-divider-txt">Step 3 — Configure Processes</div>
+      <div class="step-divider-line"></div>
+    </div>
+    <div style="height:4px"></div>
+    <div style="font-size:11px;color:var(--muted);padding:0 2px 8px">For each process: mark applicable, assign owner, set start & end dates.</div>
+    <div class="proc-stack" id="gm-proc-stack"></div>
+  </div>
+
+  <!-- Overall remarks -->
+  <div id="gm-overall-rmk-wrap" class="hidden">
+    <div class="slabel">Overall Group Remarks</div>
+    <div class="overall-rmk-card" style="margin-top:6px">
+      <div class="rmk-label">Notes for this group</div>
+      <textarea class="rmk-ta" id="gm-overall-rmk" placeholder="Overall notes, context, decisions made in meeting..."></textarea>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- PANEL: DATES (edit individual process dates)    -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="panel hidden" id="panel-dates">
+
+  <div class="slabel">Select Buyer & PO</div>
+  <div class="fcard">
+    <div class="frow">
+      <div class="ficon">B</div>
+      <div class="fcontent">
+        <div class="flabel">Buyer</div>
+        <div class="fval ph" id="ds-v-buyer">Tap to select</div>
+      </div>
+      <div class="farrow">▼</div>
+      <select class="ns" id="ds-sel-buyer" onchange="dsOnBuyer()"><option value="">Select buyer...</option></select>
+    </div>
+    <div class="frow">
+      <div class="ficon">P</div>
+      <div class="fcontent">
+        <div class="flabel">Purchase Order</div>
+        <div class="fval ph" id="ds-v-po">Select buyer first</div>
+      </div>
+      <div class="farrow">▼</div>
+      <select class="ns" id="ds-sel-po" onchange="dsOnPO()" disabled><option value="">Select PO...</option></select>
+    </div>
+  </div>
+
+  <div class="slabel">Select Process</div>
+  <div class="fcard">
+    <div class="frow">
+      <div class="ficon">*</div>
+      <div class="fcontent">
+        <div class="flabel">Process</div>
+        <div class="fval ph" id="ds-v-process">Select PO first</div>
+      </div>
+      <div class="farrow">▼</div>
+      <select class="ns" id="ds-sel-process" onchange="dsOnProcess()" disabled><option value="">Select process...</option></select>
+    </div>
+    <div class="frow">
+      <div class="ficon">@</div>
+      <div class="fcontent"><div class="flabel">Owner</div><div class="fval ph" id="ds-v-owner">—</div></div>
+    </div>
+    <div class="frow">
+      <div class="ficon">#</div>
+      <div class="fcontent"><div class="flabel">Current Planned Date</div><div class="fval ph" id="ds-v-current">—</div></div>
+    </div>
+  </div>
+
+  <div class="slabel">Update Date</div>
+  <div class="quick-dates">
+    <button class="qd" onclick="qDate('end',0)">Today</button>
+    <button class="qd" onclick="qDate('end',1)">+1d</button>
+    <button class="qd" onclick="qDate('end',3)">+3d</button>
+    <button class="qd" onclick="qDate('end',5)">+5d</button>
+    <button class="qd" onclick="qDate('end',7)">+1wk</button>
+    <button class="qd" onclick="qDate('end',10)">+10d</button>
+    <button class="qd" onclick="qDate('end',14)">+2wk</button>
+  </div>
+  <div class="fcard" style="margin-top:2px">
+    <div class="frow">
+      <div class="ficon">D</div>
+      <div class="fcontent">
+        <div class="flabel">New Planned Date (End)</div>
+        <div class="fval ph" id="ds-v-date">Tap to pick</div>
+      </div>
+      <div class="farrow">▼</div>
+      <input type="date" class="nd" id="ds-sel-date" onchange="dsOnDate()">
+    </div>
+  </div>
+
+  <div class="slabel">Remarks</div>
+  <div class="rmk-card">
+    <div class="rmk-label">Notes</div>
+    <textarea class="rmk-ta" id="ds-rmk" placeholder="Delay reason, notes..."></textarea>
+  </div>
+
+  <div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div class="slabel">This Session</div>
+      <button class="copy-btn" id="copy-btn" onclick="copyLog()">COPY</button>
+    </div>
+    <div id="log-list"><div class="log-empty">No entries yet</div></div>
+  </div>
+</div>
+
+<!-- BOTTOM ACTION -->
+<div class="action-wrap">
+  <button class="action-btn" id="action-btn" onclick="actionClick()" disabled>ENTER PASSWORD FIRST</button>
+</div>
+
+<script>
+var SHEET_ID    = '1S2ikmWM_GlWbYVuOlPQBbGEebtnO31qNcc8m7-CTaRU';
+var API_KEY     = 'AIzaSyCQ2IAWSR-cwdxqaxvBlfhwBHUiueu8vmo';
+var WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw8m7QPOVnZ7KKVaoz0lJ6bo-E81HSltsyMjbr421Trk0EhPHIW-LIRtyCKMYHfsjB-/exec';
+var WEB_APP_PW  = 'pcs2025champo';
+
+// ── 20 PROCESS DEFINITIONS ──
+// type: 'material'    → Available toggle (Available / Not Available) + show dates if Not Available
+//       'production'  → Location toggle (In House PNP / BDH / Vendor etc.) + dates always shown
+//       'special'     → custom rendering handled inline
+// ownerMode: 'fixed' | 'dropdown' | 'freetext'
+var PROCESSES = [
+  {seq:1,  name:'Yarn',            type:'material',
+    ownerMode:'auto',   // auto-assign: PNP→Miraj, BDH→Rajender
+    locations:['Available PNP','Available BDH','Not Available'],
+    defaultLoc:'Available PNP'},
+
+  {seq:2,  name:'Dyeing',          type:'production',
+    ownerMode:'fixed',  owner:'Jitender',
+    locations:['In House PNP','In House BDH','Vendor'],
+    defaultLoc:'In House PNP',
+    hasAccessories:true,  // Zip/Lace/Piping/Fringe/Tassel
+    accessoryOptions:['Zip','Lace','Piping','Fringe','Tassel']},
+
+  {seq:3,  name:'Fabric',          type:'material',
+    ownerMode:'dropdown', ownerOptions:['Amit','Miraj'], defaultOwner:'Amit',
+    locations:['Available PNP','Available BDH','Not Available'],
+    defaultLoc:'Available PNP'},
+
+  {seq:4,  name:'Canvas Requirement', type:'production',
+    ownerMode:'dropdown', ownerOptions:['Pawan','Miraj'], defaultOwner:'Pawan',
+    locations:['In House PNP','In House BDH','Vendor'],
+    defaultLoc:'In House PNP'},
+
+  {seq:5,  name:'Canvas Source',   type:'material',
+    ownerMode:'dropdown', ownerOptions:['Amit','Miraj'], defaultOwner:'Amit',
+    locations:['Available PNP','Available BDH','Not Available'],
+    defaultLoc:'Available PNP'},
+
+  {seq:6,  name:'Piping',          type:'material',
+    ownerMode:'fixed', owner:'Pawan',
+    locations:['Available PNP','Available BDH','Not Available'],
+    defaultLoc:'Available PNP'},
+
+  {seq:7,  name:'Trims',           type:'material',
+    ownerMode:'dropdown', ownerOptions:['Pawan','Amit'], defaultOwner:'Pawan',
+    locations:['Available PNP','Not Available'],  // no BDH for Trims
+    defaultLoc:'Available PNP'},
+
+  {seq:8,  name:'Weaving',         type:'production',
+    ownerMode:'dropdown', ownerOptions:['Pawan','Somdutt'], defaultOwner:'Pawan',
+    ownerVariantMap:{'Pawan':'Hand Woven','Somdutt':'Machine Woven'},
+    locations:['In House PNP','BDH','Vendor'],
+    defaultLoc:'In House PNP'},
+
+  {seq:9,  name:'Wash',            type:'special-wash',
+    ownerMode:'fixed', owner:'—',
+    washOptions:['Washing','Tumbling','Softener'],
+    locations:['In House','Vendor'],
+    defaultLoc:'In House'},
+
+  {seq:10, name:'Tufting',         type:'production',
+    ownerMode:'dropdown', ownerOptions:['Pawan','Sufiyan'], defaultOwner:'Pawan',
+    locations:['In House PNP','BDH','Vendor'],
+    defaultLoc:'In House PNP'},
+
+  {seq:11, name:'Knitting',        type:'production',
+    ownerMode:'fixed', owner:'Raj',
+    locations:['In House PNP','Vendor'],  // no BDH
+    defaultLoc:'In House PNP'},
+
+  {seq:12, name:'Embroidery Yarn', type:'material',
+    ownerMode:'dropdown', ownerOptions:['Miraj','Aman'], defaultOwner:'Miraj',
+    locations:['Available','To Order'],
+    defaultLoc:'Available'},
+
+  {seq:13, name:'Embroidery',      type:'special-embroidery',
+    ownerMode:'fixed', owner:'Sufiyan',
+    embroideryTypes:['Computer','Hand','Both'],
+    locations:['In House PNP','Vendor'],
+    defaultLoc:'In House PNP'},
+
+  {seq:14, name:'Printing',        type:'production',
+    ownerMode:'fixed', owner:'Pawan',
+    locations:['In House PNP','Vendor'],
+    defaultLoc:'In House PNP'},
+
+  {seq:15, name:'Foam Backing',    type:'production',
+    ownerMode:'fixed', owner:'Raj',
+    locations:['In House','Vendor'],
+    defaultLoc:'Vendor'},
+
+  {seq:16, name:'Stitching',       type:'production',
+    ownerMode:'fixed', owner:'Pardeep',
+    locations:['In House','Vendor'],
+    defaultLoc:'In House'},
+
+  {seq:17, name:'Testing',         type:'production',
+    ownerMode:'freetext', ownerPlaceholder:'Merchant name...',
+    locations:['In House','Vendor'],
+    defaultLoc:'In House'},
+
+  {seq:18, name:'Pack & Trims',    type:'production',
+    ownerMode:'fixed', owner:'Imran',
+    locations:['In House PNP','Vendor'],
+    defaultLoc:'In House PNP'},
+
+  {seq:19, name:'Final Packing',   type:'production',
+    ownerMode:'location-auto',  // PNP→dropdown Baljeet/Sunil, BDH→BDH fixed
+    locations:['PNP','BDH'],
+    defaultLoc:'PNP',
+    pnpOwners:['Baljeet','Sunil']},
+
+  {seq:20, name:'Final Inspection',type:'production',
+    ownerMode:'fixed', owner:'Jayant',
+    hasMerchantField:true,
+    locations:['PNP','BDH'],
+    defaultLoc:'PNP'}
+];
+
+// ── STATE ──
+var authed = false;
+var sheetData = [], masterOrders = [];
+var activeTab = 'groups';
+var sessionLog = [];
+
+// Group manager state
+var gmBuyer=null, gmPO=null, gmCategory=null;
+var gmSelectedSKUs = [];   // indices into masterOrders filtered by PO
+var gmEditingGroupKey = null;
+var gmDeleteTarget = null;
+
+// procConfig[seq] = {applicable: true/false, owner: string, startDate: string (ISO), endDate: string (ISO)}
+var procConfig = {};
+
+// Date setter state
+var dsBuyer=null, dsPO=null, dsProc=null, dsDate=null, dsRow=null;
+
+// ── CLOCK ──
+setInterval(function(){
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+},1000);
+document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+
+// ── AUTH ──
+function checkPassword() {
+  var pwd = document.getElementById('pwd-input').value.trim();
+  if (pwd !== WEB_APP_PW) {
+    document.getElementById('pwd-err').textContent = 'Wrong password.';
+    document.getElementById('pwd-input').value = '';
+    setTimeout(function(){ document.getElementById('pwd-err').textContent=''; }, 2000);
+    return;
+  }
+  authed = true;
+  sessionStorage.setItem('pcs_authed','1');
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('user-chip').classList.remove('hidden');
+  setWrite('green','Ready — saves go directly to sheet');
+  loadData();
+  updateActionBtn();
+}
+function signOut() {
+  if (!confirm('Sign out?')) return;
+  authed=false; sessionStorage.removeItem('pcs_authed');
+  document.getElementById('user-chip').classList.add('hidden');
+  document.getElementById('auth-screen').classList.remove('hidden');
+  document.getElementById('pwd-input').value='';
+  setWrite('amber','Not signed in');
+  updateActionBtn();
+}
+
+// ── WEB APP ──
+async function webAppWrite(body) {
+  await fetch(WEB_APP_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify(Object.assign({}, body, {password: WEB_APP_PW}))
+  });
+  await new Promise(function(r){ setTimeout(r, 80); });
+  return {ok: true};
+}
+
+// ── LOAD DATA ──
+async function loadData() {
+  try {
+    var r1 = await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent('PROCESS_TIMELINES!A:AD')+'?key='+API_KEY);
+    var r2 = await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent('MASTER_ORDERS!A:Z')+'?key='+API_KEY);
+    sheetData = parsePT((await r1.json()).values || []);
+    masterOrders = parseMO((await r2.json()).values || []);
+    populateAllBuyers();
+    toast('Data loaded','ok');
+    updateActionBtn();
+  } catch(e) {
+    toast('Load error: '+e.message,'err');
+  }
+}
+
+function parsePT(rows) {
+  if (rows.length < 2) return [];
+  var h = rows[0];
+  function idx(n){ return h.findIndex(function(x){return x===n;}); }
+  var I = {
+    PO:idx('PO'), BUYER:idx('Buyer'), SKU:idx('SKU'), COLOR:idx('Color'), SIZE:idx('Size'),
+    SEQ:idx('Process_Seq'), PROC:idx('Process_Name'), VAR:idx('Variant'), APP:idx('Applicable'),
+    OWN:idx('Owner'), STAT:idx('Status'),
+    START:idx('Start_Date'), PLANNED:idx('Planned_Date'), ACTUAL:idx('Actual_Date'),
+    DELAY:idx('Delay_Days'), CAUSE:idx('Delay_Cause'),
+    PO_F:idx('PO_F'), BUYER_F:idx('Buyer_F'), SKU_F:idx('SKU_F'),
+    GROUP:idx('Group_Key'), SS:idx('Ship_Start'), SE:idx('Ship_End'),
+    REMARKS:idx('Remarks'), CAL_EV:idx('Cal_Event_ID'), CAT:idx('Category')
+  };
+  return rows.slice(1).map(function(r,i){
+    return {
+      row:i+2,
+      po:   r[I.PO_F]  ||r[I.PO]   ||'',
+      buyer:r[I.BUYER_F]||r[I.BUYER]||'',
+      sku:  r[I.SKU_F]  ||r[I.SKU]  ||'',
+      color:r[I.COLOR]||'', size:r[I.SIZE]||'',
+      seq:parseInt(r[I.SEQ])||0, proc:r[I.PROC]||'',
+      variant:r[I.VAR]||'', app:r[I.APP]||'NO',
+      owner:r[I.OWN]||'', status:r[I.STAT]||'',
+      startDate:r[I.START]||'', planned:r[I.PLANNED]||'',
+      groupKey:r[I.GROUP]||'',
+      shipStart:r[I.SS]||'', shipEnd:r[I.SE]||'',
+      calEventId:r[I.CAL_EV]||'',
+      category:r[I.CAT]||''
+    };
+  }).filter(function(r){ return r.seq>0; });
+}
+
+function parseMO(rows) {
+  if (rows.length < 2) return [];
+  var h = rows[0];
+  function idx(n){ return h.findIndex(function(x){return x===n;}); }
+  var I = {PO:idx('PO'),BUYER:idx('Buyer'),SKU:idx('SKU'),COLOR:idx('Color'),SIZE:idx('Size'),QTY:idx('Order_Qty'),GROUP:idx('Group_Key'),SS:idx('Ship_Start'),SE:idx('Ship_End'),CAT:idx('Category')};
+  return rows.slice(1).map(function(r,i){
+    return {
+      moRow:i+2, po:String(r[I.PO]||'').trim(), buyer:String(r[I.BUYER]||'').trim(),
+      sku:String(r[I.SKU]||'').trim(), color:String(r[I.COLOR]||'').trim(),
+      size:String(r[I.SIZE]||'').trim(), qty:String(r[I.QTY]||'').trim(),
+      groupKey:String(r[I.GROUP]||'').trim(),
+      shipStart:String(r[I.SS]||'').trim(), shipEnd:String(r[I.SE]||'').trim(),
+      category:String(r[I.CAT]||'').trim()   // H&M: Online/Shop — blank for other buyers
+    };
+  }).filter(function(r){ return r.po && r.sku; });
+}
+
+// ── TABS ──
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tab-groups').classList.toggle('active', tab==='groups');
+  document.getElementById('tab-dates').classList.toggle('active', tab==='dates');
+  document.getElementById('panel-groups').classList.toggle('hidden', tab!=='groups');
+  document.getElementById('panel-dates').classList.toggle('hidden', tab!=='dates');
+  updateActionBtn();
+}
+
+function populateAllBuyers() {
+  var buyers = [];
+  masterOrders.forEach(function(r){ if(r.buyer && buyers.indexOf(r.buyer)===-1) buyers.push(r.buyer); });
+  buyers.sort();
+  var opts = '<option value="">Select buyer...</option>'+buyers.map(function(b){return '<option value="'+b+'">'+b+'</option>';}).join('');
+  document.getElementById('gm-sel-buyer').innerHTML = opts;
+  document.getElementById('ds-sel-buyer').innerHTML = opts;
+}
+
+// ═══════════════════════════════════════════════════
+// GROUP MANAGER
+// ═══════════════════════════════════════════════════
+
+function gmOnBuyer() {
+  var buyer = document.getElementById('gm-sel-buyer').value;
+  if (!buyer) return;
+  gmBuyer=buyer; gmPO=null; gmSelectedSKUs=[]; gmEditingGroupKey=null; procConfig={}; gmCategory=null;
+  document.getElementById('gm-overall-rmk').value = '';
+  sv('gm-v-buyer',buyer); sv('gm-v-po','Select PO',true);
+  document.getElementById('gm-existing-wrap').classList.add('hidden');
+  document.getElementById('gm-sku-section').classList.add('hidden');
+  document.getElementById('gm-proc-section').classList.add('hidden');
+  // Show H&M category toggle only for H&M
+  var isHM = buyer === 'H&M';
+  document.getElementById('gm-hm-section').classList.toggle('hidden', !isHM);
+  if (!isHM) { gmCategory = null; }
+  else { sv('gm-v-category','Select category',true); gmCatRender(); }
+  var pos = [];
+  masterOrders.filter(function(r){return r.buyer===buyer;}).forEach(function(r){if(pos.indexOf(r.po)===-1)pos.push(r.po);});
+  pos.sort();
+  var sp = document.getElementById('gm-sel-po');
+  sp.innerHTML = '<option value="">Select PO...</option>'+pos.map(function(p){return '<option value="'+p+'">'+p+'</option>';}).join('');
+  sp.disabled = false;
+  updateActionBtn();
+}
+
+function gmSetCategory(cat) {
+  gmCategory = cat;
+  sv('gm-v-category', cat);
+  gmCatRender();
+  updateActionBtn();
+}
+function gmCatRender() {
+  document.getElementById('gm-cat-online').className = 'app-btn yes' + (gmCategory==='Online'?' active':'');
+  document.getElementById('gm-cat-shop').className   = 'app-btn no'  + (gmCategory==='Shop'?' active':'');
+}
+
+function gmOnPO() {
+  var po = document.getElementById('gm-sel-po').value;
+  if (!po) return;
+  gmPO=po; gmSelectedSKUs=[]; gmEditingGroupKey=null; procConfig={};
+  document.getElementById('gm-overall-rmk').value = '';
+  sv('gm-v-po',po);
+  renderGMExisting();
+  renderGMSKUGrid();
+  document.getElementById('gm-existing-wrap').classList.remove('hidden');
+  document.getElementById('gm-sku-section').classList.remove('hidden');
+  document.getElementById('gm-proc-section').classList.add('hidden');
+  updateActionBtn();
+}
+
+function getGroupsForPO(po) {
+  var groups = {};
+  sheetData.filter(function(r){return r.po===po&&r.groupKey;}).forEach(function(r){
+    if (!groups[r.groupKey]) groups[r.groupKey]={key:r.groupKey,po:po,rows:[],procs:[]};
+    groups[r.groupKey].rows.push(r);
+    if (!groups[r.groupKey].procs.find(function(p){return p.seq===r.seq;}))
+      groups[r.groupKey].procs.push({seq:r.seq,name:r.proc,app:r.app,planned:r.planned,startDate:r.startDate});
+  });
+  return Object.values(groups);
+}
+
+function getSKUsForGroup(groupKey, po) {
+  return masterOrders.filter(function(r){return r.po===po&&r.groupKey===groupKey;});
+}
+
+function renderGMExisting() {
+  var groups = getGroupsForPO(gmPO);
+  var wrap = document.getElementById('gm-groups-list');
+  if (!groups.length) { wrap.innerHTML='<div class="no-groups">No groups yet for this PO</div>'; return; }
+  wrap.innerHTML = groups.map(function(g){
+    var skus = getSKUsForGroup(g.key,gmPO);
+    var src = skus.length ? skus : g.rows.filter(function(r,i,a){return a.findIndex(function(x){return x.sku===r.sku;})=== i;});
+    var skuLines = src.map(function(s){return '<div class="group-sku-item">· '+s.sku+(s.color?' · '+s.color:'')+(s.size?' · '+s.size:'')+'</div>';}).join('');
+    var pills = g.procs.sort(function(a,b){return a.seq-b.seq;}).map(function(p){
+      if (p.app==='NO') return '<span class="proc-pill na">'+p.seq+'.'+p.name+'</span>';
+      return '<span class="proc-pill'+(p.planned?' done':'')+'">'+p.seq+'.'+p.name+(p.planned?' ✓':'')+'</span>';
+    }).join('');
+    return '<div class="group-card">'+
+      '<div class="group-header" onclick="toggleBody(\'gb-'+g.key+'\')">'+
+        '<div><div class="group-key-lbl">'+g.key+'</div><div class="group-sub">PO '+g.po+' · '+src.length+' SKU · '+g.rows.length+' rows</div></div>'+
+        '<div class="group-actions">'+
+          '<button class="gact-btn" onclick="event.stopPropagation();editGroup(\''+g.key+'\')">Edit</button>'+
+          '<button class="gact-btn" onclick="event.stopPropagation();promptDelete(\''+g.key+'\')">Del</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="group-body hidden" id="gb-'+g.key+'">'+
+        '<div>'+skuLines+'</div>'+
+        '<div class="proc-pills" style="margin-top:6px">'+pills+'</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function toggleBody(id) {
+  var el = document.getElementById(id);
+  if (el) el.classList.toggle('hidden');
+}
+
+function renderGMSKUGrid() {
+  var skus = masterOrders.filter(function(r){return r.po===gmPO;});
+  var groups = getGroupsForPO(gmPO);
+  var groupedSet = new Set();
+  groups.forEach(function(g){ getSKUsForGroup(g.key,gmPO).forEach(function(s){groupedSet.add(s.sku);}); });
+  document.getElementById('gm-sku-grid').innerHTML = skus.map(function(s,i){
+    var inGroup = groupedSet.has(s.sku) && s.groupKey && !gmEditingGroupKey;
+    var selected = gmSelectedSKUs.indexOf(i) !== -1;
+    var badge = (s.groupKey&&inGroup)?'<span class="sku-badge">'+s.groupKey+'</span>':'';
+    return '<div class="sku-card'+(selected?' selected':'')+(inGroup&&!selected?' in-group':'')+'" onclick="'+(inGroup&&!gmEditingGroupKey?'':'gmToggleSKU('+i+')')+'">'+
+      '<div class="sku-chk">'+(selected?'✓':inGroup?'✓':'')+'</div>'+
+      '<div class="sku-info">'+
+        '<div class="sku-name">'+s.sku+(inGroup&&!selected?' <span style="font-size:9px;color:var(--green);font-weight:700">✓ FILLED</span>':'')+'</div>'+
+        '<div class="sku-meta">'+[s.color,s.size,s.qty?'Qty:'+s.qty:''].filter(Boolean).join(' · ')+'</div>'+
+      '</div>'+badge+
+    '</div>';
+  }).join('');
+  var available = skus.filter(function(s){return !groupedSet.has(s.sku)||gmEditingGroupKey;}).length;
+  document.getElementById('gm-sel-all-btn').textContent = gmSelectedSKUs.length===available&&available>0?'DESELECT ALL':'SELECT ALL';
+}
+
+function gmToggleSKU(i) {
+  var idx = gmSelectedSKUs.indexOf(i);
+  if (idx===-1) gmSelectedSKUs.push(i);
+  else gmSelectedSKUs.splice(idx,1);
+  renderGMSKUGrid();
+  if (gmSelectedSKUs.length>0) {
+    initProcConfig();
+    renderProcStack();
+    document.getElementById('gm-proc-section').classList.remove('hidden');
+    document.getElementById('gm-overall-rmk-wrap').classList.remove('hidden');
+  } else {
+    document.getElementById('gm-proc-section').classList.add('hidden');
+    document.getElementById('gm-overall-rmk-wrap').classList.add('hidden');
+  }
+  updateActionBtn();
+}
+
+function gmToggleAll() {
+  var skus = masterOrders.filter(function(r){return r.po===gmPO;});
+  var groups = getGroupsForPO(gmPO);
+  var groupedSet = new Set();
+  groups.forEach(function(g){getSKUsForGroup(g.key,gmPO).forEach(function(s){groupedSet.add(s.sku);});});
+  var available = skus.map(function(_,i){return i;}).filter(function(i){return !groupedSet.has(skus[i].sku)||gmEditingGroupKey;});
+  if (gmSelectedSKUs.length===available.length) gmSelectedSKUs=[];
+  else gmSelectedSKUs=available.slice();
+  renderGMSKUGrid();
+  if (gmSelectedSKUs.length>0) {
+    initProcConfig(); renderProcStack();
+    document.getElementById('gm-proc-section').classList.remove('hidden');
+    document.getElementById('gm-overall-rmk-wrap').classList.remove('hidden');
+  } else {
+    document.getElementById('gm-proc-section').classList.add('hidden');
+    document.getElementById('gm-overall-rmk-wrap').classList.add('hidden');
+  }
+  updateActionBtn();
+}
+
+// Initialise procConfig defaults
+function initProcConfig() {
+  PROCESSES.forEach(function(p){
+    if (!procConfig[p.seq]) {
+      var defaultOwner = '';
+      if (p.ownerMode==='fixed') defaultOwner = p.owner||'';
+      else if (p.ownerMode==='dropdown') defaultOwner = p.defaultOwner||p.ownerOptions[0]||'';
+      else if (p.ownerMode==='auto') defaultOwner = 'Miraj'; // PNP default
+      else if (p.ownerMode==='location-auto') defaultOwner = p.pnpOwners ? p.pnpOwners[0] : '';
+
+      procConfig[p.seq] = {
+        applicable: false,
+        location: p.defaultLoc || '',
+        owner: defaultOwner,
+        ownerFreeText: '',
+        startDate: '',
+        endDate: '',
+        remark: '',
+        // Wash special
+        washChecks: {},
+        // Dyeing accessories
+        accChecks: {},   // {name: {checked, location, startDate, endDate}}
+        // Embroidery special
+        embType: 'Computer',
+        embComputerStart: '', embComputerEnd: '',
+        embHandStart: '',    embHandEnd: '',
+        embComputerLoc: p.defaultLoc||'In House PNP',
+        embHandLoc: p.defaultLoc||'In House PNP',
+        // Already completed
+        alreadyDone: false,
+        doneDate: ''
+      };
+      // Init wash checks
+      if (p.washOptions) p.washOptions.forEach(function(w){ procConfig[p.seq].washChecks[w]=false; });
+      // Init accessory checks
+      if (p.accessoryOptions) p.accessoryOptions.forEach(function(a){ procConfig[p.seq].accChecks[a]={checked:false,location:'In House',startDate:'',endDate:''}; });
+    }
+  });
+}
+
+// ─── PROC RENDERING HELPERS ───────────────────────────────────────────────
+
+function pfDateField(id, label, val, onchangeFn) {
+  return '<div class="proc-field" onclick="var e=document.getElementById(\''+id+'\');if(e.showPicker)e.showPicker()">'+
+    '<div class="pf-label">'+label+'</div>'+
+    '<div class="pf-val'+(val?'':' ph')+'" id="pf-d-'+id+'">'+(val?fmtShort(val):'Tap to pick')+'</div>'+
+    '<div class="pf-arrow">▼</div>'+
+    '<input type="date" id="'+id+'" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;font-size:16px" value="'+(val||'')+'" onchange="'+onchangeFn+'">'+
+  '</div>';
+}
+
+function pfLocField(idOrSeq, loc, options, onchangeFn) {
+  // idOrSeq can be a number (regular proc seq) or a string (for sub-sections)
+  var dispId = 'pf-loc-'+idOrSeq;
+  var handler = onchangeFn || ('procSetLoc('+idOrSeq+',this.value)');
+  return '<div class="proc-field">'+
+    '<div class="pf-label">Loc</div>'+
+    '<div class="pf-val'+(loc?'':' ph')+'" id="'+dispId+'">'+(loc||'Select')+'</div>'+
+    '<div class="pf-arrow">▼</div>'+
+    '<select class="ns" onchange="'+handler+'">'+
+      options.map(function(o){return '<option value="'+o+'"'+(o===loc?' selected':'')+'>'+o+'</option>';}).join('')+
+    '</select>'+
+  '</div>';
+}
+
+function pfOwnerFixed(owner) {
+  return '<div class="proc-field"><div class="pf-label">Owner</div><div class="pf-val">'+owner+'</div></div>';
+}
+
+function pfOwnerDropdown(seq, ownerOptions, currentOwner) {
+  return '<div class="proc-field">'+
+    '<div class="pf-label">Owner</div>'+
+    '<div class="pf-val" id="pf-owner-'+seq+'">'+(currentOwner||ownerOptions[0])+'</div>'+
+    '<div class="pf-arrow">▼</div>'+
+    '<select class="ns" onchange="procSetOwner('+seq+',this.value)">'+
+      ownerOptions.map(function(o){return '<option value="'+o+'"'+(o===currentOwner?' selected':'')+'>'+o+'</option>';}).join('')+
+    '</select>'+
+  '</div>';
+}
+
+function pfOwnerFreetext(seq, val, placeholder) {
+  return '<div class="proc-field">'+
+    '<div class="pf-label">Owner</div>'+
+    '<input type="text" style="flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:12px;font-family:var(--sans)" '+
+      'placeholder="'+(placeholder||'Owner name...')+'" value="'+(val||'')+'" oninput="procSetOwnerText('+seq+',this.value)">'+
+  '</div>';
+}
+
+function pfRemark(seq, val) {
+  return '<div class="proc-rmk-wrap">'+
+    '<div class="pf-label" style="padding-top:3px;flex-shrink:0">Note</div>'+
+    '<textarea class="proc-rmk" placeholder="Process note..." rows="2" oninput="procSetRemark('+seq+',this.value)">'+(val||'')+'</textarea>'+
+  '</div>';
+}
+
+function pfAlreadyDone(seq, cfg) {
+  var html = '<div class="proc-field" style="background:rgba(46,204,113,0.05)">'+
+    '<div class="pf-label" style="color:var(--green)">Done?</div>'+
+    '<label style="flex:1;display:flex;align-items:center;gap:8px;cursor:pointer">'+
+      '<input type="checkbox" '+(cfg.alreadyDone?'checked':'')+' onchange="procSetDone('+seq+',this.checked)" style="width:16px;height:16px;accent-color:var(--green)">'+
+      '<span style="font-size:11px;color:var(--muted)">Already completed before meeting</span>'+
+    '</label>'+
+  '</div>';
+  if (cfg.alreadyDone) {
+    html += pfDateField('pd-done-'+seq,'Done Date',cfg.doneDate,'procSetDoneDate('+seq+',this.value)');
+  }
+  return html;
+}
+
+// ─── MAIN RENDER ──────────────────────────────────────────────────────────
+
+function renderProcStack() {
+  var html = PROCESSES.map(function(p){
+    var cfg = procConfig[p.seq];
+    if (!cfg) return '';
+    var app = cfg.applicable;
+
+    var bodyHtml = '';
+    if (app) {
+      bodyHtml = buildProcBody(p, cfg);
+    }
+
+    return '<div class="proc-row'+(app?' applicable':' not-applicable')+'" id="proc-row-'+p.seq+'">'+
+      '<div class="proc-header">'+
+        '<div class="proc-num">'+p.seq+'</div>'+
+        '<div class="proc-name">'+p.name+'</div>'+
+        '<div class="app-toggle">'+
+          '<button class="app-btn yes'+(app?' active':'')+'" onclick="procSetApplicable('+p.seq+',true)">YES</button>'+
+          '<button class="app-btn no'+(app?'':' active')+'" onclick="procSetApplicable('+p.seq+',false)">NO</button>'+
+        '</div>'+
+      '</div>'+
+      (app ? '<div class="proc-body">'+bodyHtml+'</div>' : '')+
+    '</div>';
+  }).join('');
+  document.getElementById('gm-proc-stack').innerHTML = html;
+}
+
+function buildProcBody(p, cfg) {
+  var html = '';
+
+  // ── Already Done toggle (all processes) ──
+  html += pfAlreadyDone(p.seq, cfg);
+
+  // ── MATERIAL type (Available / Not Available toggle) ──
+  if (p.type === 'material') {
+    html += pfLocField(p.seq, cfg.location, p.locations);
+    // Show dates only if Not Available / To Order
+    var needsDates = cfg.location === 'Not Available' || cfg.location === 'To Order';
+    if (needsDates) {
+      html += pfDateField('pd-start-'+p.seq,'Start',cfg.startDate,'procSetDate('+p.seq+',\'start\',this.value)');
+      html += pfDateField('pd-end-'+p.seq,'End',cfg.endDate,'procSetDate('+p.seq+',\'end\',this.value)');
+    }
+    // Owner
+    if (p.ownerMode==='fixed') html += pfOwnerFixed(p.owner);
+    else if (p.ownerMode==='dropdown') html += pfOwnerDropdown(p.seq, p.ownerOptions, cfg.owner);
+    else if (p.ownerMode==='auto') html += pfOwnerFixed(cfg.owner); // auto-set by location
+  }
+
+  // ── PRODUCTION type ──
+  else if (p.type === 'production') {
+    html += pfLocField(p.seq, cfg.location, p.locations);
+
+    // Owner
+    if (p.ownerMode==='fixed') html += pfOwnerFixed(p.owner);
+    else if (p.ownerMode==='dropdown') html += pfOwnerDropdown(p.seq, p.ownerOptions, cfg.owner);
+    else if (p.ownerMode==='freetext') html += pfOwnerFreetext(p.seq, cfg.ownerFreeText, p.ownerPlaceholder);
+    else if (p.ownerMode==='location-auto') {
+      if (cfg.location==='BDH') html += pfOwnerFixed('BDH');
+      else html += pfOwnerDropdown(p.seq, p.pnpOwners, cfg.owner);
+    }
+
+    // Merchant field (Final Inspection, Testing)
+    if (p.hasMerchantField) {
+      html += '<div class="proc-field">'+
+        '<div class="pf-label" style="width:60px">Merchant</div>'+
+        '<input type="text" style="flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:12px;font-family:var(--sans)" '+
+          'placeholder="Merchant name..." value="'+(cfg.merchantName||'')+'" oninput="procSetMerchant('+p.seq+',this.value)">'+
+      '</div>';
+    }
+
+    html += pfDateField('pd-start-'+p.seq,'Start',cfg.startDate,'procSetDate('+p.seq+',\'start\',this.value)');
+    html += pfDateField('pd-end-'+p.seq,'End',cfg.endDate,'procSetDate('+p.seq+',\'end\',this.value)');
+
+    // Dyeing accessories
+    if (p.hasAccessories) {
+      html += '<div class="proc-field" style="flex-wrap:wrap;min-height:auto;padding:10px 13px;gap:6px;flex-direction:column">'+
+        '<div class="pf-label" style="width:100%;margin-bottom:4px">Accessories (optional)</div>'+
+        '<div style="display:flex;flex-wrap:wrap;gap:6px">'+
+        p.accessoryOptions.map(function(a){
+          var ac = cfg.accChecks[a]||{checked:false};
+          return '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;'+(ac.checked?'border-color:var(--accent);background:rgba(79,142,247,0.1)':'')+'">'+
+            '<input type="checkbox" '+(ac.checked?'checked':'')+' onchange="procAccCheck('+p.seq+',\''+a+'\',this.checked)" style="accent-color:var(--accent)">'+a+'</label>';
+        }).join('')+
+        '</div>'+
+        // Per-accessory details for checked ones
+        p.accessoryOptions.filter(function(a){return cfg.accChecks[a]&&cfg.accChecks[a].checked;}).map(function(a){
+          var ac = cfg.accChecks[a];
+          return '<div style="border:1px solid var(--border2);border-radius:8px;padding:8px 10px;margin-top:4px;background:var(--bg3)">'+
+            '<div style="font-size:10px;font-family:var(--mono);color:var(--accent);margin-bottom:6px">'+a+'</div>'+
+            pfLocField('acc-'+p.seq+'-'+a, ac.location||'In House', ['In House','Vendor'], 'procAccLoc('+p.seq+',\''+a+'\',this.value)')+
+            pfDateField('pd-acc-s-'+p.seq+'-'+a,'Start',ac.startDate,'procAccDate('+p.seq+',\''+a+'\',\'start\',this.value)')+
+            pfDateField('pd-acc-e-'+p.seq+'-'+a,'End',ac.endDate,'procAccDate('+p.seq+',\''+a+'\',\'end\',this.value)')+
+          '</div>';
+        }).join('')+
+      '</div>';
+    }
+  }
+
+  // ── WASH special ──
+  else if (p.type === 'special-wash') {
+    // Checkboxes
+    html += '<div class="proc-field" style="flex-wrap:wrap;min-height:auto;padding:10px 13px;gap:6px;flex-direction:column">'+
+      '<div class="pf-label" style="width:100%;margin-bottom:4px">Wash Types</div>'+
+      '<div style="display:flex;flex-wrap:wrap;gap:6px">'+
+      p.washOptions.map(function(w){
+        var checked = cfg.washChecks[w];
+        return '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;'+(checked?'border-color:var(--accent);background:rgba(79,142,247,0.1)':'')+'">'+
+          '<input type="checkbox" '+(checked?'checked':'')+' onchange="procWashCheck('+p.seq+',\''+w+'\',this.checked)" style="accent-color:var(--accent)">'+w+'</label>';
+      }).join('')+
+      '</div></div>';
+    html += pfLocField(p.seq, cfg.location, p.locations);
+    html += pfDateField('pd-end-'+p.seq,'Date (consolidated)',cfg.endDate,'procSetDate('+p.seq+',\'end\',this.value)');
+  }
+
+  // ── EMBROIDERY special ──
+  else if (p.type === 'special-embroidery') {
+    html += pfOwnerFixed('Sufiyan');
+    // Type selector
+    html += '<div class="proc-field">'+
+      '<div class="pf-label">Type</div>'+
+      '<div class="pf-val" id="pf-emb-type-'+p.seq+'">'+cfg.embType+'</div>'+
+      '<div class="pf-arrow">▼</div>'+
+      '<select class="ns" onchange="procEmbType('+p.seq+',this.value)">'+
+        p.embroideryTypes.map(function(t){return '<option value="'+t+'"'+(t===cfg.embType?' selected':'')+'>'+t+'</option>';}).join('')+
+      '</select>'+
+    '</div>';
+    // Computer section
+    if (cfg.embType==='Computer'||cfg.embType==='Both') {
+      html += '<div style="border-left:2px solid var(--accent);margin:4px 0 0 13px;padding-left:8px">'+
+        '<div style="font-size:9px;font-family:var(--mono);color:var(--accent);padding:4px 0">COMPUTER'+(cfg.embType==='Both'?' (first)':'')+'</div>'+
+        pfLocField('emb-c-'+p.seq, cfg.embComputerLoc, p.locations, 'procEmbLoc('+p.seq+',\'c\',this.value)')+
+        pfDateField('pd-emb-cs-'+p.seq,'Start',cfg.embComputerStart,'procEmbDate('+p.seq+',\'computerStart\',this.value)')+
+        pfDateField('pd-emb-ce-'+p.seq,'End',cfg.embComputerEnd,'procEmbDate('+p.seq+',\'computerEnd\',this.value)')+
+      '</div>';
+    }
+    // Hand section
+    if (cfg.embType==='Hand'||cfg.embType==='Both') {
+      html += '<div style="border-left:2px solid var(--amber);margin:4px 0 0 13px;padding-left:8px">'+
+        '<div style="font-size:9px;font-family:var(--mono);color:var(--amber);padding:4px 0">HAND'+(cfg.embType==='Both'?' (after Computer)':'')+'</div>'+
+        pfLocField('emb-h-'+p.seq, cfg.embHandLoc, p.locations, 'procEmbLoc('+p.seq+',\'h\',this.value)')+
+        pfDateField('pd-emb-hs-'+p.seq,'Start',cfg.embHandStart,'procEmbDate('+p.seq+',\'handStart\',this.value)')+
+        pfDateField('pd-emb-he-'+p.seq,'End',cfg.embHandEnd,'procEmbDate('+p.seq+',\'handEnd\',this.value)')+
+      '</div>';
+    }
+  }
+
+  html += pfRemark(p.seq, cfg.remark);
+  return html;
+}
+
+// ─── PROC STATE SETTERS ───────────────────────────────────────────────────
+
+function procSetApplicable(seq, val) {
+  if (!procConfig[seq]) initProcConfig();
+  procConfig[seq].applicable = val;
+  renderProcStack();
+  updateActionBtn();
+}
+
+function procSetLoc(seq, val) {
+  if (!procConfig[seq]) return;
+  procConfig[seq].location = val;
+  // Yarn: auto-assign owner by location
+  var p = PROCESSES.find(function(x){return x.seq===seq;});
+  if (p && p.ownerMode==='auto') {
+    procConfig[seq].owner = (val==='Available BDH') ? 'Rajender' : 'Miraj';
+  }
+  // Final Packing location-auto: reset owner when switching to BDH
+  if (p && p.ownerMode==='location-auto') {
+    if (val==='BDH') procConfig[seq].owner='BDH';
+    else procConfig[seq].owner = p.pnpOwners[0];
+  }
+  renderProcStack();
+}
+
+function procSetOwner(seq, val) {
+  if (!procConfig[seq]) return;
+  procConfig[seq].owner = val;
+  var el = document.getElementById('pf-owner-'+seq);
+  if (el) el.textContent = val;
+}
+
+function procSetOwnerText(seq, val) {
+  if (!procConfig[seq]) return;
+  procConfig[seq].ownerFreeText = val;
+  procConfig[seq].owner = val;
+}
+
+function procSetMerchant(seq, val) {
+  if (!procConfig[seq]) return;
+  procConfig[seq].merchantName = val;
+}
+
+function procSetDate(seq, which, val) {
+  if (!procConfig[seq]) return;
+  if (which==='start') procConfig[seq].startDate = val;
+  else procConfig[seq].endDate = val;
+  var el = document.getElementById('pf-d-pd-'+(which==='start'?'start':'end')+'-'+seq);
+  if (el) { el.textContent = val?fmtShort(val):'Tap to pick'; el.className = val?'pf-val':'pf-val ph'; }
+  updateActionBtn();
+}
+
+function procSetRemark(seq, val) {
+  if (!procConfig[seq]) return;
+  procConfig[seq].remark = val;
+}
+
+function procSetDone(seq, checked) {
+  if (!procConfig[seq]) return;
+  procConfig[seq].alreadyDone = checked;
+  renderProcStack();
+}
+
+function procSetDoneDate(seq, val) {
+  if (!procConfig[seq]) return;
+  procConfig[seq].doneDate = val;
+}
+
+function procWashCheck(seq, wash, checked) {
+  if (!procConfig[seq]) return;
+  procConfig[seq].washChecks[wash] = checked;
+  renderProcStack();
+}
+
+function procAccCheck(seq, acc, checked) {
+  if (!procConfig[seq]) return;
+  if (!procConfig[seq].accChecks[acc]) procConfig[seq].accChecks[acc]={checked:false,location:'In House',startDate:'',endDate:''};
+  procConfig[seq].accChecks[acc].checked = checked;
+  renderProcStack();
+}
+
+function procAccDate(seq, acc, which, val) {
+  if (!procConfig[seq]||!procConfig[seq].accChecks[acc]) return;
+  if (which==='start') procConfig[seq].accChecks[acc].startDate=val;
+  else procConfig[seq].accChecks[acc].endDate=val;
+  var el = document.getElementById('pf-d-pd-acc-'+(which==='start'?'s':'e')+'-'+seq+'-'+acc);
+  if (el) { el.textContent = val?fmtShort(val):'Tap to pick'; el.className=val?'pf-val':'pf-val ph'; }
+}
+
+function procEmbType(seq, val) {
+  if (!procConfig[seq]) return;
+  procConfig[seq].embType = val;
+  renderProcStack();
+}
+
+function procEmbDate(seq, which, val) {
+  if (!procConfig[seq]) return;
+  procConfig[seq][which] = val; // e.g. cfg['computerStart'] = val
+  var keyMap = {computerStart:'pd-emb-cs-',computerEnd:'pd-emb-ce-',handStart:'pd-emb-hs-',handEnd:'pd-emb-he-'};
+  var el = document.getElementById('pf-d-'+(keyMap[which]||'')+seq);
+  if (el) { el.textContent = val?fmtShort(val):'Tap to pick'; el.className=val?'pf-val':'pf-val ph'; }
+}
+
+// Note: pfLocField for accessories and embroidery sub-sections uses different seq IDs
+// so we need a generic location setter
+function procSetLoc_generic(seqOrKey, val) {
+  // Called by inline selects for accessories and embroidery
+  // seqOrKey can be 'acc-2-Zip' or 'emb-c-13' etc — handled by dedicated functions
+}
+// Override: accessory location setter
+function procAccLoc(seq, acc, val) {
+  if (!procConfig[seq]||!procConfig[seq].accChecks[acc]) return;
+  procConfig[seq].accChecks[acc].location = val;
+  var el = document.getElementById('pf-loc-acc-'+seq+'-'+acc);
+  if (el) el.textContent = val;
+}
+// Override: embroidery loc setter
+function procEmbLoc(seq, which, val) {
+  if (!procConfig[seq]) return;
+  if (which==='c') procConfig[seq].embComputerLoc = val;
+  else procConfig[seq].embHandLoc = val;
+  var el = document.getElementById('pf-loc-emb-'+which+'-'+seq);
+  if (el) el.textContent = val;
+}
+
+function editGroup(groupKey) {
+  gmEditingGroupKey = groupKey;
+  // Restore H&M category from sheet if applicable
+  if (gmBuyer === 'H&M') {
+    var catRow = sheetData.find(function(r){return r.po===gmPO&&r.groupKey===groupKey;});
+    gmCategory = (catRow && catRow.category) || null;
+    document.getElementById('gm-hm-section').classList.remove('hidden');
+    if (gmCategory) { sv('gm-v-category', gmCategory); gmCatRender(); }
+  }
+  var groupSKUs = getSKUsForGroup(groupKey,gmPO).map(function(s){return s.sku;});
+  var skus = masterOrders.filter(function(r){return r.po===gmPO;});
+  gmSelectedSKUs = skus.map(function(_,i){return i;}).filter(function(i){return groupSKUs.indexOf(skus[i].sku)!==-1;});
+  // Load existing procConfig from sheet data
+  procConfig = {};
+  initProcConfig(); // set defaults first
+  var groupRows = sheetData.filter(function(r){return r.po===gmPO&&r.groupKey===groupKey;});
+  PROCESSES.forEach(function(p){
+    var row = groupRows.find(function(r){return r.seq===p.seq;});
+    if (row) {
+      procConfig[p.seq].applicable = row.app==='YES';
+      procConfig[p.seq].owner = row.owner || procConfig[p.seq].owner;
+      procConfig[p.seq].location = row.variant || p.defaultLoc || '';
+      procConfig[p.seq].startDate = isoFromSheet(row.startDate) || '';
+      procConfig[p.seq].endDate = isoFromSheet(row.planned) || '';
+    }
+  });
+  renderGMSKUGrid();
+  renderProcStack();
+  document.getElementById('gm-proc-section').classList.remove('hidden');
+  document.getElementById('gm-overall-rmk-wrap').classList.remove('hidden');
+  updateActionBtn();
+  toast('Editing '+groupKey,'ok');
+}
+
+function promptDelete(groupKey) {
+  gmDeleteTarget = groupKey;
+  var rows = sheetData.filter(function(r){return r.po===gmPO&&r.groupKey===groupKey;});
+  document.getElementById('del-modal-desc').textContent = 'Delete group "'+groupKey+'" from PO '+gmPO+'? Removes '+rows.length+' process rows. Cannot be undone.';
+  document.getElementById('del-modal').classList.remove('hidden');
+}
+function closeDelModal() {
+  document.getElementById('del-modal').classList.add('hidden');
+  gmDeleteTarget=null;
+}
+async function confirmDelete() {
+  if (!gmDeleteTarget) return;
+  var rows = sheetData.filter(function(r){return r.po===gmPO&&r.groupKey===gmDeleteTarget;});
+  var groupSKUs = getSKUsForGroup(gmDeleteTarget,gmPO);
+  closeDelModal();
+  try {
+    await webAppWrite({action:'clearRows',sheet:'PROCESS_TIMELINES',rows:rows.map(function(r){return r.row;})});
+    if (groupSKUs.length) await webAppWrite({action:'updateGroupKey',moRows:groupSKUs.map(function(s){return {row:s.moRow,groupKey:''};})});
+    toast('Deleted '+gmDeleteTarget,'ok');
+    await loadData(); renderGMExisting(); renderGMSKUGrid();
+    document.getElementById('gm-proc-section').classList.add('hidden');
+  } catch(e) { toast('Delete error: '+e.message,'err'); }
+}
+
+function generateGroupKey(po) {
+  var n = getGroupsForPO(po).length+1;
+  return po+'-G'+(n<10?'0'+n:String(n));
+}
+
+// ── CREATE / UPDATE GROUP ──
+async function createOrUpdateGroup() {
+  if (!gmPO || gmSelectedSKUs.length===0) return;
+  var skus = masterOrders.filter(function(r){return r.po===gmPO;});
+  var selectedData = gmSelectedSKUs.map(function(i){return skus[i];});
+  var groupKey = gmEditingGroupKey || generateGroupKey(gmPO);
+  var btn = document.getElementById('action-btn');
+  btn.classList.add('saving'); btn.textContent='SAVING...'; btn.disabled=true;
+
+  try {
+    // Delete old rows if editing
+    if (gmEditingGroupKey) {
+      var oldRows = sheetData.filter(function(r){return r.po===gmPO&&r.groupKey===gmEditingGroupKey;});
+      if (oldRows.length) {
+        // Delete calendar events for old rows first
+        var oldEventIds = oldRows.map(function(r){return r.calEventId;}).filter(Boolean);
+        if (oldEventIds.length) await webAppWrite({action:'deleteCalendarEvents', eventIds:oldEventIds});
+        await webAppWrite({action:'clearRows',sheet:'PROCESS_TIMELINES',rows:oldRows.map(function(r){return r.row;})});
+      }
+    }
+
+    var firstSKU = selectedData[0];
+    var skuStr = selectedData.map(function(s){return s.sku;}).join(', ');
+    var colorStr = selectedData.map(function(s){return s.color;}).filter(Boolean).join(', ');
+    var sizes = [];
+    selectedData.forEach(function(s){if(s.size&&sizes.indexOf(s.size)===-1)sizes.push(s.size);});
+    var sizeStr = sizes.join(', ');
+    var qtyTotal = selectedData.reduce(function(sum,s){return sum+(parseInt(s.qty)||0);},0);
+
+    var overallRmk = document.getElementById('gm-overall-rmk').value.trim();
+
+    // ── Build rows ── Each process = 1 row, EXCEPT Embroidery "Both" = 2 rows
+    // Accessories for Dyeing = extra rows after Dyeing
+    var newRows = [];
+
+    PROCESSES.forEach(function(p){
+      var cfg = procConfig[p.seq] || {};
+      var applicable = cfg.applicable ? 'YES' : 'NO';
+      var owner = cfg.owner || '';
+      var startDate = cfg.startDate ? fmtSheet(cfg.startDate) : '';
+      var endDate   = cfg.endDate   ? fmtSheet(cfg.endDate)   : '';
+      var remark    = cfg.remark || '';
+      var variant   = cfg.location || '';
+      var status    = cfg.alreadyDone ? 'COMPLETE' : '';
+      var actualDate = cfg.alreadyDone && cfg.doneDate ? fmtSheet(cfg.doneDate) : '';
+
+      function makeRow(seqNum, procName, variantStr, ownerStr, startStr, endStr, rmkStr, appStr, actualStr, statusStr) {
+        return [
+          gmPO, gmBuyer, skuStr, colorStr, sizeStr, qtyTotal,
+          seqNum, procName, variantStr||'', appStr||applicable, ownerStr||owner,
+          startStr||startDate, endStr||endDate, actualStr||actualDate, 0, '', statusStr||status,
+          firstSKU.shipStart||'', firstSKU.shipEnd||'',
+          rmkStr||remark, '', '', '', '', '', groupKey, '', '', '',
+          '', '', overallRmk, '', gmCategory||''
+        ];
+      }
+
+      if (p.type === 'special-embroidery' && applicable==='YES' && cfg.embType==='Both') {
+        // Two rows: Computer first, then Hand
+        newRows.push(makeRow(p.seq, p.name, 'Computer', 'Sufiyan',
+          cfg.embComputerStart?fmtSheet(cfg.embComputerStart):'',
+          cfg.embComputerEnd?fmtSheet(cfg.embComputerEnd):'',
+          remark+'|Loc:'+cfg.embComputerLoc));
+        newRows.push(makeRow(p.seq, p.name, 'Hand', 'Sufiyan',
+          cfg.embHandStart?fmtSheet(cfg.embHandStart):'',
+          cfg.embHandEnd?fmtSheet(cfg.embHandEnd):'',
+          remark+'|Loc:'+cfg.embHandLoc));
+      } else if (p.type === 'special-embroidery' && applicable==='YES') {
+        var isComp = cfg.embType==='Computer';
+        var eStart = isComp ? (cfg.embComputerStart?fmtSheet(cfg.embComputerStart):'') : (cfg.embHandStart?fmtSheet(cfg.embHandStart):'');
+        var eEnd   = isComp ? (cfg.embComputerEnd?fmtSheet(cfg.embComputerEnd):'')     : (cfg.embHandEnd?fmtSheet(cfg.embHandEnd):'');
+        var eLoc   = isComp ? cfg.embComputerLoc : cfg.embHandLoc;
+        newRows.push(makeRow(p.seq, p.name, cfg.embType, 'Sufiyan', eStart, eEnd, remark+'|Loc:'+eLoc));
+      } else if (p.type === 'special-wash' && applicable==='YES') {
+        var washTypes = Object.keys(cfg.washChecks).filter(function(k){return cfg.washChecks[k];}).join('+');
+        newRows.push(makeRow(p.seq, p.name, washTypes||'Wash', owner, '', endDate));
+      } else {
+        // Standard row
+        var locVariant = cfg.location || variant;
+        newRows.push(makeRow(p.seq, p.name, locVariant, owner, startDate, endDate));
+      }
+
+      // Dyeing accessories (additional rows after main dyeing row, seq=2.1, 2.2... stored as seq 2 with variant)
+      if (p.hasAccessories && applicable==='YES' && cfg.accChecks) {
+        p.accessoryOptions.forEach(function(a){
+          var ac = cfg.accChecks[a];
+          if (ac && ac.checked) {
+            newRows.push(makeRow(p.seq, p.name+' — '+a, 'Accessory:'+a, 'Jitender',
+              ac.startDate?fmtSheet(ac.startDate):'',
+              ac.endDate?fmtSheet(ac.endDate):'',
+              'Loc:'+ac.location));
+          }
+        });
+      }
+    });
+
+    await webAppWrite({action:'appendRows', sheet:'PROCESS_TIMELINES', rows:newRows});
+    await webAppWrite({action:'updateGroupKey', moRows:selectedData.map(function(s){return {row:s.moRow,groupKey:groupKey};})});
+
+    var verb = gmEditingGroupKey?'Updated':'Created';
+    toast(verb+' '+groupKey+' — '+newRows.length+' rows written','ok');
+    btn.classList.remove('saving'); btn.classList.add('success'); btn.textContent='SAVED';
+
+    gmEditingGroupKey=null; gmSelectedSKUs=[]; procConfig={};
+    document.getElementById('gm-overall-rmk').value = '';
+    await loadData();
+    renderGMExisting(); renderGMSKUGrid();
+    document.getElementById('gm-proc-section').classList.add('hidden');
+    setTimeout(function(){btn.classList.remove('success');updateActionBtn();},1600);
+  } catch(e) {
+    btn.classList.remove('saving'); btn.classList.add('fail');
+    btn.textContent='FAILED — TAP TO RETRY'; btn.disabled=false;
+    toast('Error: '+e.message,'err');
+    setTimeout(function(){btn.classList.remove('fail');updateActionBtn();},3000);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// DATE SETTER
+// ═══════════════════════════════════════════════════
+function dsOnBuyer() {
+  var buyer = document.getElementById('ds-sel-buyer').value;
+  if (!buyer) return;
+  dsBuyer=buyer; dsPO=null; dsProc=null; dsRow=null; dsDate=null;
+  sv('ds-v-buyer',buyer); sv('ds-v-po','Select PO',true);
+  sv('ds-v-process','Select PO first',true); sv('ds-v-owner','—',true); sv('ds-v-current','—',true);
+  var pos=[];
+  sheetData.filter(function(r){return r.buyer===buyer&&r.po;}).forEach(function(r){if(pos.indexOf(r.po)===-1)pos.push(r.po);});
+  pos.sort();
+  var sp=document.getElementById('ds-sel-po');
+  sp.innerHTML='<option value="">Select PO...</option>'+pos.map(function(p){return '<option value="'+p+'">'+p+'</option>';}).join('');
+  sp.disabled=false;
+  document.getElementById('ds-sel-process').innerHTML='<option value="">Select process...</option>';
+  document.getElementById('ds-sel-process').disabled=true;
+  updateActionBtn();
+}
+function dsOnPO() {
+  var po=document.getElementById('ds-sel-po').value;
+  if (!po) return;
+  dsPO=po; dsProc=null; dsRow=null;
+  sv('ds-v-po',po); sv('ds-v-process','Tap to select',true); sv('ds-v-owner','—',true); sv('ds-v-current','—',true);
+  var seen={}, procs=[];
+  sheetData.filter(function(r){return r.po===po&&r.app==='YES'&&r.proc;}).sort(function(a,b){return a.seq-b.seq;}).forEach(function(r){
+    if(!seen[r.seq]){seen[r.seq]=true;procs.push(r);}
+  });
+  var sp=document.getElementById('ds-sel-process');
+  sp.innerHTML='<option value="">Select process...</option>'+procs.map(function(r){return '<option value="'+r.seq+'">'+r.seq+'. '+r.proc+(r.planned?' ✓':'')+'</option>';}).join('');
+  sp.disabled=false;
+  updateActionBtn();
+}
+function dsOnProcess() {
+  var seq=parseInt(document.getElementById('ds-sel-process').value);
+  if (!seq) return;
+  var row=null;
+  for(var i=0;i<sheetData.length;i++){if(sheetData[i].po===dsPO&&sheetData[i].seq===seq&&sheetData[i].app==='YES'){row=sheetData[i];break;}}
+  if(!row)return;
+  dsProc=row.proc; dsRow=row.row;
+  sv('ds-v-process',row.seq+'. '+row.proc);
+  sv('ds-v-owner',row.owner||'—',!row.owner);
+  sv('ds-v-current',row.planned||'Not set',!row.planned);
+  updateActionBtn();
+}
+function dsOnDate() {
+  var v=document.getElementById('ds-sel-date').value;
+  if(!v)return;
+  dsDate=v; sv('ds-v-date',fmtFull(v));
+  document.querySelectorAll('.qd').forEach(function(b){b.classList.remove('active');});
+  updateActionBtn();
+}
+function qDate(which,n) {
+  var d=new Date(); d.setDate(d.getDate()+n);
+  var iso=d.toISOString().split('T')[0];
+  document.getElementById('ds-sel-date').value=iso; dsDate=iso;
+  sv('ds-v-date',fmtFull(iso));
+  var offsets=[0,1,3,5,7,10,14];
+  document.querySelectorAll('.qd').forEach(function(b,i){b.classList.toggle('active',offsets[i]===n);});
+  updateActionBtn();
+}
+async function saveDate() {
+  if(!dsPO||!dsProc||!dsDate||!dsRow)return;
+  var remarks=document.getElementById('ds-rmk').value.trim();
+  var btn=document.getElementById('action-btn');
+  btn.classList.add('saving'); btn.textContent='SAVING...'; btn.disabled=true;
+  try {
+    var ds=fmtSheet(dsDate);
+    var updates=[{sheet:'PROCESS_TIMELINES',row:dsRow,col:13,value:ds}];
+    if(remarks) updates.push({sheet:'PROCESS_TIMELINES',row:dsRow,col:20,value:remarks});
+    await webAppWrite({action:'writeCells',updates:updates});
+    addLog({po:dsPO,proc:dsProc,date:dsDate,remarks:remarks});
+    btn.classList.remove('saving'); btn.classList.add('success'); btn.textContent='SAVED';
+    toast(dsProc+' — '+fmtShort(dsDate),'ok');
+    setTimeout(function(){btn.classList.remove('success');dsReset();},1500);
+  } catch(e) {
+    btn.classList.remove('saving'); btn.classList.add('fail');
+    btn.textContent='FAILED — TAP TO RETRY'; btn.disabled=false;
+    toast('Error: '+e.message,'err');
+    setTimeout(function(){btn.classList.remove('fail');updateActionBtn();},3000);
+  }
+}
+function dsReset() {
+  dsProc=null; dsDate=null; dsRow=null;
+  document.getElementById('ds-sel-process').value='';
+  document.getElementById('ds-sel-date').value='';
+  document.getElementById('ds-rmk').value='';
+  sv('ds-v-process','Tap to select',true);
+  sv('ds-v-owner','—',true); sv('ds-v-current','—',true);
+  sv('ds-v-date','Tap to pick',true);
+  document.querySelectorAll('.qd').forEach(function(b){b.classList.remove('active');});
+  updateActionBtn();
+}
+
+// ── ACTION BTN ──
+function actionClick() {
+  if (activeTab==='groups') createOrUpdateGroup();
+  else saveDate();
+}
+
+function updateActionBtn() {
+  var btn=document.getElementById('action-btn');
+  if(!authed){btn.textContent='ENTER PASSWORD FIRST';btn.disabled=true;return;}
+  if(activeTab==='groups'){
+    if(!gmPO){btn.textContent='SELECT PO FIRST';btn.disabled=true;return;}
+    if(gmBuyer==='H&M'&&!gmCategory){btn.textContent='SELECT H&M CATEGORY (ONLINE/SHOP)';btn.disabled=true;return;}
+    if(gmSelectedSKUs.length===0){btn.textContent='SELECT SKUS';btn.disabled=true;return;}
+    // Check at least one process has dates filled if applicable
+    var anyApplicable=false;
+    PROCESSES.forEach(function(p){if(procConfig[p.seq]&&procConfig[p.seq].applicable)anyApplicable=true;});
+    btn.disabled=false;
+    btn.textContent = gmEditingGroupKey
+      ? 'UPDATE GROUP '+gmEditingGroupKey
+      : 'CREATE GROUP — '+gmSelectedSKUs.length+' SKU'+(gmSelectedSKUs.length>1?'s':'');
+  } else {
+    var ready=dsPO&&dsProc&&dsDate&&dsRow;
+    btn.disabled=!ready;
+    if(ready) btn.textContent='SAVE — '+dsProc+' | '+fmtShort(dsDate);
+    else btn.textContent='SELECT PO + PROCESS + DATE';
+  }
+}
+
+// ── LOG ──
+function addLog(e) {
+  e.time=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  sessionLog.unshift(e); renderLog();
+  document.getElementById('copy-btn').style.display='block';
+}
+function renderLog() {
+  var el=document.getElementById('log-list');
+  if(!sessionLog.length){el.innerHTML='<div class="log-empty">No entries yet</div>';return;}
+  el.innerHTML=sessionLog.map(function(e){
+    return '<div class="log-item"><div class="ldot"></div>'+
+      '<div class="log-body"><div class="log-main">'+e.proc+' — PO '+e.po+'</div>'+
+      '<div class="log-meta">'+fmtShort(e.date)+(e.remarks?' · '+e.remarks.slice(0,40):'')+'</div></div>'+
+      '<div class="log-time">'+e.time+'</div></div>';
+  }).join('');
+}
+function copyLog() {
+  var txt=['PO\tProcess\tDate\tRemarks'].concat(sessionLog.map(function(e){return e.po+'\t'+e.proc+'\t'+e.date+'\t'+(e.remarks||'');})).join('\n');
+  navigator.clipboard.writeText(txt).then(function(){toast('Copied','ok');});
+}
+
+// ── HELPERS ──
+function sv(id,text,ph) {
+  var el=document.getElementById(id);
+  if(!el)return;
+  el.textContent=text; el.className=ph?'fval ph':'fval';
+}
+function fmtShort(iso){ return new Date(iso+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short'}); }
+function fmtFull(iso){ return new Date(iso+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); }
+function fmtSheet(iso) {
+  // Converts ISO (2025-03-15) to DD-Mon-YY
+  return new Date(iso+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');
+}
+function isoFromSheet(val) {
+  // Try to parse sheet date back to ISO for editing
+  if (!val) return '';
+  try { var d=new Date(val); if(!isNaN(d)) return d.toISOString().split('T')[0]; } catch(e){}
+  return '';
+}
+function setWrite(color,msg){ document.getElementById('wdot').className='wdot '+color; document.getElementById('wstatus').textContent=msg; }
+function toast(msg,type) {
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+(type||'');
+  setTimeout(function(){t.className='toast';},2800);
+}
+
+// ── THEME ──
+function toggleTheme() {
+  var isLight = document.body.classList.toggle('light');
+  localStorage.setItem('pcs_theme', isLight?'light':'dark');
+  document.getElementById('theme-btn').textContent = isLight ? '🌙' : '☀';
+}
+
+// ── BOOT ──
+window.addEventListener('load',function(){
+  // Restore theme
+  if(localStorage.getItem('pcs_theme')==='light'){
+    document.body.classList.add('light');
+    document.getElementById('theme-btn').textContent='🌙';
+  }
+  if(sessionStorage.getItem('pcs_authed')==='1'){
+    authed=true;
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('user-chip').classList.remove('hidden');
+    setWrite('green','Ready — saves go directly to sheet');
+    loadData();
+  }
+  updateActionBtn();
+});
+</script>
+</body>
+</html>
