@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Merchant Dashboard — PCS CHAMPO</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F5F7;--bg2:#FFFFFF;--bg3:#ECEEF2;--bg4:#E2E5EB;
+  --border:#D8DCE6;--border2:#C4CAD8;
+  --text:#1A1E2A;--muted:#8A92A6;--muted2:#6B748A;
+  --accent:#4F8EF7;--green:#27A96C;--red:#E03C3C;--amber:#D4800A;
+  --mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+.wrap{max-width:1200px;margin:0 auto;padding:20px 24px 40px}
+
+/* PIN */
+.pscr{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:16px}
+.pscr.gone{display:none}
+.pbadge{font-family:var(--mono);font-size:9px;letter-spacing:0.25em;color:var(--accent);text-transform:uppercase;padding:5px 14px;border:1px solid rgba(79,142,247,0.3);border-radius:20px;background:rgba(79,142,247,0.06)}
+.plogo{font-family:var(--mono);font-size:26px;font-weight:700;color:var(--text)}
+.plogo b{color:var(--accent)}
+.psub{font-size:14px;color:var(--muted2);text-align:center;max-width:280px;line-height:1.6}
+.pcard{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px 22px;width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:20px;box-shadow:0 4px 20px rgba(0,0,0,0.06)}
+.pdots{display:flex;gap:12px}
+.pdot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border2);background:transparent;transition:all 0.2s}
+.pdot.filled{background:var(--accent);border-color:var(--accent)}
+.pdot.error{background:var(--red);border-color:var(--red)}
+.pkpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+.pk{padding:16px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;text-align:center;cursor:pointer;font-size:20px;font-weight:600;color:var(--text);transition:all 0.15s;user-select:none}
+.pk:active,.pk:hover{background:var(--bg4)}
+.pk.del{font-size:16px;color:var(--muted2)}
+.pk.z{grid-column:2}
+.perr{font-size:12px;color:var(--red);font-family:var(--mono);min-height:16px;text-align:center}
+
+/* HEADER */
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.hdr-left{display:flex;flex-direction:column;gap:2px}
+.hdr-tag{font-family:var(--mono);font-size:8px;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase}
+.hdr-name{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--text)}
+.hdr-name b{color:var(--accent)}
+.hdr-right{display:flex;align-items:center;gap:10px}
+#live-clock{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--text)}
+.mpill{display:flex;align-items:center;gap:6px;background:rgba(39,169,108,0.08);border:1px solid rgba(39,169,108,0.25);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--green);cursor:pointer;font-weight:600}
+.mpill.gone{display:none}
+.rfbtn{font-family:var(--mono);font-size:10px;padding:5px 12px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;transition:all 0.2s}
+.rfbtn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* STATE OVERLAY */
+.overlay{position:fixed;inset:0;background:rgba(244,245,247,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;gap:12px}
+.overlay.gone{display:none}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ovmsg{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.overr{font-family:var(--mono);font-size:11px;color:var(--red);max-width:360px;text-align:center;line-height:1.6}
+
+/* STAT CARDS */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px 20px;position:relative;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.stat-card.blue::before{background:var(--accent)}
+.stat-card.green::before{background:var(--green)}
+.stat-card.red::before{background:var(--red)}
+.stat-card.amber::before{background:var(--amber)}
+.stat-lbl{font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);font-family:var(--mono);margin-bottom:8px}
+.stat-val{font-family:var(--mono);font-size:34px;font-weight:700;line-height:1;margin-bottom:4px}
+.stat-card.blue .stat-val{color:var(--accent)}
+.stat-card.green .stat-val{color:var(--green)}
+.stat-card.red .stat-val{color:var(--red)}
+.stat-card.amber .stat-val{color:var(--amber)}
+.stat-sub{font-size:11px;color:var(--muted)}
+
+/* SHIP STRIP */
+.ship-strip{display:flex;gap:10px;margin-bottom:20px;overflow-x:auto;padding-bottom:4px}
+.ship-strip::-webkit-scrollbar{height:3px}
+.ship-strip::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.ship-card{flex-shrink:0;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;min-width:150px;cursor:default;position:relative;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.ship-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.ship-card.urgent::before{background:var(--red)}
+.ship-card.warning::before{background:var(--amber)}
+.ship-card.ok::before{background:var(--green)}
+.ship-po{font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:2px}
+.ship-buyer{font-size:11px;font-weight:600;margin-bottom:5px;color:var(--text)}
+.ship-days{font-family:var(--mono);font-size:22px;font-weight:700;line-height:1}
+.ship-card.urgent .ship-days{color:var(--red)}
+.ship-card.warning .ship-days{color:var(--amber)}
+.ship-card.ok .ship-days{color:var(--green)}
+.ship-label{font-size:9px;color:var(--muted);margin-top:2px}
+.ship-date{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:3px}
+
+/* FILTER BAR */
+.filter-bar{display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.filter-lbl{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase}
+.fsel{font-family:var(--mono);font-size:11px;padding:5px 28px 5px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238A92A6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+.fsel:focus{border-color:var(--accent)}
+.fclear{font-family:var(--mono);font-size:9px;padding:5px 10px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer}
+.fclear:hover{border-color:var(--red);color:var(--red)}
+
+/* GRID */
+.main-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.panel.full{grid-column:span 2}
+.phdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg3)}
+.ptitle{font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text)}
+.pbadge{font-family:var(--mono);font-size:9px;padding:2px 8px;border-radius:20px;background:var(--border);color:var(--muted)}
+.pbadge.red{background:rgba(224,60,60,0.1);color:var(--red)}
+.pbadge.grn{background:rgba(39,169,108,0.1);color:var(--green)}
+.pbadge.amb{background:rgba(212,128,10,0.1);color:var(--amber)}
+.scrollable{max-height:280px;overflow-y:auto}
+.scrollable::-webkit-scrollbar{width:4px}
+.scrollable::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.empty{padding:28px;text-align:center;color:var(--muted);font-size:13px;font-family:var(--mono)}
+
+/* TODAY LIST */
+.titem{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid rgba(216,220,230,0.6);transition:background 0.15s}
+.titem:hover{background:rgba(79,142,247,0.03)}
+.titem:last-child{border-bottom:none}
+.tdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.tinfo{flex:1;min-width:0}
+.tproc{font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tmeta{font-size:10px;color:var(--muted);margin-top:1px;font-family:var(--mono)}
+.tdate{font-family:var(--mono);font-size:10px;color:var(--muted2);flex-shrink:0}
+
+/* TABLE */
+.dtbl{width:100%;border-collapse:collapse}
+.dtbl th{padding:8px 14px;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-family:var(--mono);text-align:left;border-bottom:1px solid var(--border);background:var(--bg3)}
+.dtbl td{padding:9px 14px;font-size:12px;border-bottom:1px solid rgba(216,220,230,0.5);vertical-align:middle}
+.dtbl tr:last-child td{border-bottom:none}
+.dtbl tr:hover td{background:rgba(79,142,247,0.03)}
+.pill{display:inline-block;font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:4px;font-weight:600}
+.pill-ok{background:rgba(39,169,108,0.1);color:var(--green)}
+.pill-dl{background:rgba(224,60,60,0.1);color:var(--red)}
+.pill-pr{background:rgba(212,128,10,0.1);color:var(--amber)}
+.pill-na{background:rgba(138,146,166,0.1);color:var(--muted)}
+
+/* CTA */
+.cta-bar{background:var(--bg2);border:1px solid rgba(79,142,247,0.3);border-radius:10px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;box-shadow:0 1px 4px rgba(79,142,247,0.08)}
+.cta-txt{font-size:13px;color:var(--text);font-weight:500}
+.cta-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.cta-btn{font-family:var(--mono);font-size:11px;padding:10px 20px;background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;white-space:nowrap;font-weight:700;transition:all 0.2s;text-decoration:none;display:inline-block}
+.cta-btn:hover{opacity:0.9;transform:translateY(-1px)}
+
+/* TOAST */
+.toast{position:fixed;top:72px;left:50%;transform:translateX(-50%) translateY(-12px);background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-family:var(--mono);font-size:11px;opacity:0;transition:all 0.25s;z-index:600;white-space:nowrap;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,0.08)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{border-color:rgba(224,60,60,0.4);color:var(--red)}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .stat-row{grid-template-columns:repeat(2,1fr)}
+  .main-grid{grid-template-columns:1fr}
+  .panel.full{grid-column:span 1}
+  .wrap{padding:14px 14px 40px}
+  .hdr{padding:10px 14px}
+  #live-clock{font-size:16px}
+}
+@media(max-width:540px){
+  .stat-row{grid-template-columns:repeat(2,1fr);gap:8px}
+  .stat-val{font-size:26px}
+  .stat-card{padding:14px}
+  .filter-bar{gap:6px}
+  .cta-bar{flex-direction:column;align-items:flex-start}
+  .cta-btn{width:100%;text-align:center}
+  .hdr-name{font-size:14px}
+}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- PIN SCREEN -->
+<div class="pscr" id="pscr">
+  <div class="pbadge">Merchant Dashboard</div>
+  <div class="plogo">PCS <b>CHAMPO</b></div>
+  <div class="psub">Enter your PIN to view your POs and shipment status</div>
+  <div class="pcard">
+    <div style="font-size:13px;color:var(--muted2)">Your PIN</div>
+    <div class="pdots">
+      <div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div>
+      <div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div>
+    </div>
+    <div class="pkpad">
+      <div class="pk" onclick="pk(1)">1</div><div class="pk" onclick="pk(2)">2</div><div class="pk" onclick="pk(3)">3</div>
+      <div class="pk" onclick="pk(4)">4</div><div class="pk" onclick="pk(5)">5</div><div class="pk" onclick="pk(6)">6</div>
+      <div class="pk" onclick="pk(7)">7</div><div class="pk" onclick="pk(8)">8</div><div class="pk" onclick="pk(9)">9</div>
+      <div class="pk del" onclick="pkDel()">&#9003;</div><div class="pk z" onclick="pk(0)">0</div>
+    </div>
+    <div class="perr" id="perr"></div>
+  </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div class="overlay gone" id="overlay">
+  <div class="spinner"></div>
+  <div class="ovmsg" id="ovmsg">Loading...</div>
+  <div class="overr hidden" id="overr"></div>
+</div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="hdr-tag">Merchant Dashboard</div>
+    <div class="hdr-name">PCS <b>CHAMPO</b></div>
+  </div>
+  <div class="hdr-right">
+    <div id="live-clock">--:--</div>
+    <button class="rfbtn" onclick="loadData(true)">&#8635; Refresh</button>
+    <div class="mpill gone" id="mpill" onclick="lockOut()">
+      <span>&#127970;</span><span id="h-merchant">-</span>
+      <span style="font-size:9px;opacity:0.7">Sign out</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT (hidden until login) -->
+<div class="wrap" id="main" style="display:none">
+
+  <!-- CTA -->
+  <div class="cta-bar">
+    <div>
+      <div class="cta-txt">Update Testing, Final Inspection or Shipment</div>
+      <div class="cta-sub">Mark processes as complete or flag delays for your POs</div>
+    </div>
+    <a href="merchant-form.html" class="cta-btn">&#43; Submit Update</a>
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="stat-row" id="stat-row"></div>
+
+  <!-- SHIP COUNTDOWN -->
+  <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Shipment Countdown</div>
+  <div class="ship-strip" id="ship-strip"></div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <span class="filter-lbl">Filter:</span>
+    <select class="fsel" id="f-buyer" onchange="applyFilters()"><option value="">All Buyers</option></select>
+    <select class="fsel" id="f-po" onchange="applyFilters()"><option value="">All POs</option></select>
+    <button class="fclear" onclick="clearFilters()">&#x2715; Clear</button>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- TODAY panel -->
+    <div class="panel">
+      <div class="phdr">
+        <div class="ptitle">Due Today</div>
+        <div class="pbadge red" id="today-badge">0</div>
+      </div>
+      <div class="scrollable" id="today-list"></div>
+    </div>
+
+    <!-- NEXT 7 DAYS panel -->
+    <div class="panel">
+      <div class="phdr">
+        <div class="ptitle">Next 7 Days</div>
+        <div class="pbadge amb" id="week-badge">0</div>
+      </div>
+      <div class="scrollable" id="week-list"></div>
+    </div>
+
+    <!-- ALL PO STATUS table -->
+    <div class="panel full">
+      <div class="phdr">
+        <div class="ptitle">All PO Status</div>
+        <div class="pbadge" id="po-badge">0 POs</div>
+      </div>
+      <div class="scrollable">
+        <table class="dtbl" id="po-table">
+          <thead>
+            <tr>
+              <th>PO</th>
+              <th>Buyer</th>
+              <th>Testing</th>
+              <th>Final Inspection</th>
+              <th>Dispatch</th>
+              <th>Ship By</th>
+            </tr>
+          </thead>
+          <tbody id="po-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+var SHEET_ID='1S2ikmWM_GlWbYVuOlPQBbGEebtnO31qNcc8m7-CTaRU';
+var API_KEY='AIzaSyCQ2IAWSR-cwdxqaxvBlfhwBHUiueu8vmo';
+var MERCHANTS={'2001':'Merchant'};
+var merchantName=null,allData=[],masterOrders=[],pinBuffer='';
+var filters={buyer:'',po:''};
+
+var today=new Date(); today.setHours(0,0,0,0);
+var week7=new Date(today); week7.setDate(week7.getDate()+7);
+
+function fmt(d){return d?d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}):'—';}
+function fmtFull(d){return d?d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'}):'—';}
+
+// CLOCK
+setInterval(function(){
+  document.getElementById('live-clock').textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+},1000);
+document.getElementById('live-clock').textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+
+// PIN
+function pk(n){
+  if(pinBuffer.length>=4)return;
+  pinBuffer+=String(n);rdots();
+  if(pinBuffer.length===4)setTimeout(chkPin,150);
+}
+function pkDel(){pinBuffer=pinBuffer.slice(0,-1);rdots();document.getElementById('perr').textContent='';document.querySelectorAll('.pdot').forEach(function(d){d.classList.remove('error')});}
+function rdots(){for(var i=0;i<4;i++)document.getElementById('pd'+i).className='pdot'+(i<pinBuffer.length?' filled':'');}
+function chkPin(){
+  var m=MERCHANTS[pinBuffer];
+  if(m){
+    merchantName=m;
+    document.getElementById('pscr').classList.add('gone');
+    document.getElementById('mpill').classList.remove('gone');
+    document.getElementById('h-merchant').textContent=m;
+    document.getElementById('main').style.display='block';
+    loadData(false);
+  }else{
+    document.getElementById('perr').textContent='Wrong PIN. Try again.';
+    document.querySelectorAll('.pdot').forEach(function(d){d.classList.add('error')});
+    setTimeout(function(){pinBuffer='';rdots();document.getElementById('perr').textContent='';document.querySelectorAll('.pdot').forEach(function(d){d.classList.remove('error')});},800);
+  }
+}
+function lockOut(){
+  if(!confirm('Sign out?'))return;
+  merchantName=null;pinBuffer='';rdots();
+  document.getElementById('mpill').classList.add('gone');
+  document.getElementById('main').style.display='none';
+  document.getElementById('pscr').classList.remove('gone');
+}
+
+// LOAD MERCHANTS
+async function loadMerchants(){
+  try{
+    var r=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent('MERCHANT_CONFIG!A:C')+'?key='+API_KEY);
+    if(!r.ok)return;
+    var rows=((await r.json()).values||[]);
+    if(rows.length<2)return;
+    var loaded={};
+    rows.slice(1).forEach(function(row){
+      var pin=(row[0]||'').trim(),name=(row[1]||'').trim(),active=(row[2]||'YES').trim().toUpperCase();
+      if(pin&&name&&active==='YES')loaded[pin]=name;
+    });
+    if(Object.keys(loaded).length>0)MERCHANTS=loaded;
+  }catch(e){}
+}
+
+// LOAD DATA
+async function loadData(refresh){
+  var ov=document.getElementById('overlay');
+  ov.classList.remove('gone');
+  document.getElementById('ovmsg').textContent='Loading your POs...';
+  document.getElementById('overr').classList.add('hidden');
+  try{
+    var r1=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent('PROCESS_TIMELINES!A:AH')+'?key='+API_KEY);
+    var r2=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent('MASTER_ORDERS!A:AH')+'?key='+API_KEY);
+    allData=parsePT((await r1.json()).values||[]);
+    masterOrders=parseMO((await r2.json()).values||[]);
+    ov.classList.add('gone');
+    render();
+  }catch(e){
+    document.getElementById('ovmsg').textContent='Load failed';
+    var er=document.getElementById('overr');
+    er.classList.remove('hidden');
+    er.textContent='Error: '+e.message;
+  }
+}
+
+function parsePT(rows){
+  if(rows.length<2)return[];
+  var h=rows[0];function idx(n){return h.findIndex(function(x){return x===n});}
+  var I={SEQ:idx('Process_Seq'),PROC:idx('Process_Name'),APP:idx('Applicable'),
+    STAT:idx('Status'),PLANNED:idx('Planned_Date'),ACTUAL:idx('Actual_Date'),
+    PO_F:idx('PO_F'),BUYER_F:idx('Buyer_F'),PO:idx('PO'),BUYER:idx('Buyer'),
+    SHIP_START:idx('Ship_Start'),SHIP_END:idx('Ship_End')};
+  function pd(v){
+    if(!v)return null;
+    if(!isNaN(v)){var d=new Date(1899,11,30);d.setDate(d.getDate()+parseInt(v));return d;}
+    var d=new Date(v);return isNaN(d)?null:d;
+  }
+  return rows.slice(1).map(function(r,i){
+    return{row:i+2,po:r[I.PO_F]||r[I.PO]||'',buyer:r[I.BUYER_F]||r[I.BUYER]||'',
+      seq:parseInt(r[I.SEQ])||0,proc:r[I.PROC]||'',app:r[I.APP]||'NO',
+      status:r[I.STAT]||'',planned:pd(r[I.PLANNED]),actual:pd(r[I.ACTUAL]),
+      shipStart:pd(r[I.SHIP_START]),shipEnd:pd(r[I.SHIP_END])};
+  }).filter(function(r){return r.seq>0&&r.po&&r.app==='YES'});
+}
+
+function parseMO(rows){
+  if(rows.length<2)return[];
+  var h=rows[0];function idx(n){return h.findIndex(function(x){return x===n});}
+  var I={PO:idx('PO'),BUYER:idx('Buyer'),SKU:idx('SKU'),COLOR:idx('Color'),SIZE:idx('Size'),
+    SS:idx('Ship_Start'),SE:idx('Ship_End'),STATUS:idx('PO_Status'),MERCHANT:idx('Merchant')};
+  function pd(v){if(!v)return null;if(!isNaN(v)){var d=new Date(1899,11,30);d.setDate(d.getDate()+parseInt(v));return d;}var d=new Date(v);return isNaN(d)?null:d;}
+  return rows.slice(1).map(function(r){
+    return{po:String(r[I.PO]||'').trim(),buyer:String(r[I.BUYER]||'').trim(),
+      sku:String(r[I.SKU]||'').trim(),color:String(r[I.COLOR]||'').trim(),
+      size:String(r[I.SIZE]||'').trim(),
+      shipEnd:pd(r[I.SE]),poStatus:String(r[I.STATUS]||'').trim(),
+      merchant:String(r[I.MERCHANT]||'').trim()};
+  }).filter(function(r){return r.po&&r.merchant===merchantName});
+}
+
+function getMyPOs(){
+  var seen={};
+  masterOrders.forEach(function(r){seen[r.po]=r.buyer;});
+  return seen;
+}
+
+function filtered(){
+  var myPOs=getMyPOs();
+  return allData.filter(function(r){
+    if(!myPOs[r.po])return false;
+    if(r.seq===21)return false; // exclude shipped marker
+    if(filters.buyer&&r.buyer!==filters.buyer)return false;
+    if(filters.po&&r.po!==filters.po)return false;
+    return true;
+  });
+}
+
+function render(){
+  var data=filtered();
+  var myPOs=getMyPOs();
+  var poKeys=Object.keys(myPOs);
+
+  // Filter by filters
+  if(filters.buyer) poKeys=poKeys.filter(function(p){return myPOs[p]===filters.buyer;});
+  if(filters.po)   poKeys=poKeys.filter(function(p){return p===filters.po;});
+
+  // Populate filter dropdowns
+  var buyers=[...new Set(Object.values(myPOs))].sort();
+  var bSel=document.getElementById('f-buyer');
+  var curB=bSel.value;
+  bSel.innerHTML='<option value="">All Buyers</option>'+buyers.map(function(b){return'<option value="'+b+'"'+(b===curB?' selected':'')+'>'+b+'</option>';}).join('');
+  
+  var pos=[...new Set(Object.keys(myPOs).filter(function(p){return !filters.buyer||myPOs[p]===filters.buyer;}))].sort();
+  var pSel=document.getElementById('f-po');
+  var curP=pSel.value;
+  pSel.innerHTML='<option value="">All POs</option>'+pos.map(function(p){return'<option value="'+p+'"'+(p===curP?' selected':'')+'>'+p+'</option>';}).join('');
+
+  // Stats
+  var totalPOs=poKeys.length;
+  var shippedPOs=masterOrders.filter(function(r){return r.poStatus==='SHIPPED'&&(!filters.buyer||r.buyer===filters.buyer)&&(!filters.po||r.po===filters.po);});
+  var shippedSet=new Set(shippedPOs.map(function(r){return r.po;}));
+  var delayedPOs=new Set(data.filter(function(r){return r.status==='DELAY';}).map(function(r){return r.po;}));
+  var todayItems=data.filter(function(r){return r.planned&&r.planned.toDateString()===today.toDateString()&&r.status!=='COMPLETE';});
+  
+  document.getElementById('stat-row').innerHTML=
+    '<div class="stat-card blue"><div class="stat-lbl">My POs</div><div class="stat-val">'+totalPOs+'</div><div class="stat-sub">Active orders</div></div>'+
+    '<div class="stat-card green"><div class="stat-lbl">Shipped</div><div class="stat-val">'+shippedSet.size+'</div><div class="stat-sub">Completed</div></div>'+
+    '<div class="stat-card red"><div class="stat-lbl">Delayed</div><div class="stat-val">'+delayedPOs.size+'</div><div class="stat-sub">POs with delays</div></div>'+
+    '<div class="stat-card amber"><div class="stat-lbl">Due Today</div><div class="stat-val">'+todayItems.length+'</div><div class="stat-sub">Processes to action</div></div>';
+
+  // Ship strip
+  renderShipStrip(poKeys);
+
+  // Today panel
+  renderTodayList(data);
+
+  // Week panel
+  renderWeekList(data);
+
+  // PO table
+  renderPOTable(poKeys, myPOs, data);
+}
+
+function renderShipStrip(poKeys){
+  var strip=document.getElementById('ship-strip');
+  var mo=masterOrders.filter(function(r){return poKeys.indexOf(r.po)!==-1&&r.shipEnd&&r.poStatus!=='SHIPPED';});
+  var poShip={};
+  mo.forEach(function(r){if(!poShip[r.po]||r.shipEnd>poShip[r.po].shipEnd)poShip[r.po]={buyer:r.buyer,shipEnd:r.shipEnd};});
+  var entries=Object.entries(poShip).sort(function(a,b){return a[1].shipEnd-b[1].shipEnd;});
+  if(!entries.length){strip.innerHTML='<div style="font-family:var(--mono);font-size:10px;color:var(--muted);padding:4px 0">No upcoming shipments</div>';return;}
+  strip.innerHTML=entries.map(function(e){
+    var po=e[0],info=e[1];
+    var days=Math.round((info.shipEnd-today)/864e5);
+    var cls=days<=14?'urgent':days<=30?'warning':'ok';
+    var label=days<0?'OVERDUE':days===0?'Ships TODAY':'day'+(days===1?'':'s')+' to ship';
+    return'<div class="ship-card '+cls+'">'+
+      '<div class="ship-po">'+po+'</div>'+
+      '<div class="ship-buyer">'+info.buyer+'</div>'+
+      '<div class="ship-days">'+Math.abs(days)+'</div>'+
+      '<div class="ship-label">'+label+'</div>'+
+      '<div class="ship-date">By '+fmtFull(info.shipEnd)+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+function renderTodayList(data){
+  var items=data.filter(function(r){return r.planned&&r.planned.toDateString()===today.toDateString()&&r.status!=='COMPLETE';});
+  var el=document.getElementById('today-list');
+  document.getElementById('today-badge').textContent=items.length;
+  if(!items.length){el.innerHTML='<div class="empty">Nothing due today</div>';return;}
+  el.innerHTML=items.map(function(r){
+    var dot=r.status==='DELAY'?'var(--red)':'var(--amber)';
+    return'<div class="titem">'+
+      '<div class="tdot" style="background:'+dot+'"></div>'+
+      '<div class="tinfo">'+
+        '<div class="tproc">'+r.proc+' — PO '+r.po+'</div>'+
+        '<div class="tmeta">'+r.buyer+(r.status?' · '+r.status:'')+'</div>'+
+      '</div>'+
+      '<div class="tdate">'+fmt(r.planned)+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+function renderWeekList(data){
+  var tomorrow=new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+  var items=data.filter(function(r){
+    if(!r.planned)return false;
+    if(r.status==='COMPLETE')return false;
+    return r.planned>=tomorrow&&r.planned<=week7;
+  }).sort(function(a,b){return a.planned-b.planned;});
+  var el=document.getElementById('week-list');
+  document.getElementById('week-badge').textContent=items.length;
+  if(!items.length){el.innerHTML='<div class="empty">Nothing in next 7 days</div>';return;}
+  el.innerHTML=items.map(function(r){
+    var dot=r.status==='DELAY'?'var(--red)':'var(--accent)';
+    return'<div class="titem">'+
+      '<div class="tdot" style="background:'+dot+'"></div>'+
+      '<div class="tinfo">'+
+        '<div class="tproc">'+r.proc+' — PO '+r.po+'</div>'+
+        '<div class="tmeta">'+r.buyer+'</div>'+
+      '</div>'+
+      '<div class="tdate">'+fmt(r.planned)+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+function renderPOTable(poKeys, myPOs, data){
+  document.getElementById('po-badge').textContent=poKeys.length+' PO'+(poKeys.length===1?'':'s');
+  if(!poKeys.length){document.getElementById('po-tbody').innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;font-family:var(--mono)">No POs found</td></tr>';return;}
+  
+  document.getElementById('po-tbody').innerHTML=poKeys.map(function(po){
+    var buyer=myPOs[po];
+    var ptRows=data.filter(function(r){return r.po===po;});
+    var moRow=masterOrders.find(function(r){return r.po===po;});
+    
+    function procStatus(seq){
+      var r=ptRows.find(function(x){return x.seq===seq;});
+      if(!r)return'<span class="pill pill-na">N/A</span>';
+      var cls=r.status==='COMPLETE'?'ok':r.status==='DELAY'?'dl':r.actual?'ok':'pr';
+      var lbl=r.status||'Pending';
+      return'<span class="pill pill-'+cls+'">'+lbl+'</span>'+(r.planned?'<div style="font-size:9px;color:var(--muted);margin-top:2px;font-family:var(--mono)">'+fmt(r.planned)+'</div>':'');
+    }
+
+    // Dispatch = check if seq 21 exists (shipped marker) or check poStatus
+    var shipped=masterOrders.find(function(r){return r.po===po&&r.poStatus==='SHIPPED';});
+    var dispHtml=shipped?'<span class="pill pill-ok">SHIPPED</span>'+(moRow&&moRow.shipEnd?'<div style="font-size:9px;color:var(--muted);margin-top:2px;font-family:var(--mono)">'+fmtFull(moRow.shipEnd)+'</div>':''):'<span class="pill pill-pr">Pending</span>';
+    var shipBy=moRow&&moRow.shipEnd?fmtFull(moRow.shipEnd):'—';
+
+    return'<tr>'+
+      '<td style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent)">'+po+'</td>'+
+      '<td style="font-size:12px;font-weight:500">'+buyer+'</td>'+
+      '<td>'+procStatus(17)+'</td>'+
+      '<td>'+procStatus(20)+'</td>'+
+      '<td>'+dispHtml+'</td>'+
+      '<td style="font-family:var(--mono);font-size:11px;color:var(--muted2)">'+shipBy+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function applyFilters(){
+  filters.buyer=document.getElementById('f-buyer').value;
+  filters.po=document.getElementById('f-po').value;
+  render();
+}
+function clearFilters(){
+  filters={buyer:'',po:''};
+  document.getElementById('f-buyer').value='';
+  document.getElementById('f-po').value='';
+  render();
+}
+
+function toast(msg,type){
+  var el=document.getElementById('toast');
+  el.textContent=msg;el.className='toast show '+(type||'');
+  setTimeout(function(){el.className='toast';},2800);
+}
+
+window.addEventListener('keydown',function(e){
+  if(document.getElementById('pscr').classList.contains('gone'))return;
+  if(e.key>='0'&&e.key<='9')pk(parseInt(e.key));
+  else if(e.key==='Backspace')pkDel();
+});
+
+window.addEventListener('load',function(){
+  loadMerchants();
+});
+</script>
+</body>
+</html>
