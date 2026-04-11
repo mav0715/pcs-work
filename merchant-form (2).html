@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Merchant Portal — PCS CHAMPO</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F5F7;--bg2:#FFFFFF;--bg3:#ECEEF2;--bg4:#E2E5EB;
+  --border:#D8DCE6;--border2:#C4CAD8;
+  --text:#1A1E2A;--muted:#8A92A6;--muted2:#6B748A;
+  --accent:#4F8EF7;--green:#1E9E6B;--red:#D63C3C;--amber:#C47C0A;
+  --mono:"Space Mono",monospace;--sans:"DM Sans",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;min-height:100dvh;overflow-x:hidden}
+.gone{display:none!important}
+
+/* PIN SCREEN */
+.pin-scr{position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:14px}
+.pin-badge{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase;padding:4px 14px;border:1px solid rgba(79,142,247,0.3);border-radius:20px;background:rgba(79,142,247,0.05)}
+.pin-logo{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--text)}
+.pin-logo b{color:var(--accent)}
+.pin-sub{font-size:13px;color:var(--muted2);text-align:center;max-width:260px;line-height:1.5}
+.pin-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px 20px;width:100%;max-width:320px;display:flex;flex-direction:column;align-items:center;gap:18px;box-shadow:0 4px 16px rgba(0,0,0,0.06)}
+.pin-dots{display:flex;gap:12px;justify-content:center}
+.pdot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border2);background:transparent;transition:all 0.2s}
+.pdot.on{background:var(--accent);border-color:var(--accent)}
+.pdot.err{background:var(--red);border-color:var(--red)}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+.pkey{padding:15px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;text-align:center;cursor:pointer;font-size:20px;font-weight:600;color:var(--text);transition:background 0.1s;user-select:none;-webkit-user-select:none}
+.pkey:active{background:var(--bg4)}
+.pkey.del{font-size:15px;color:var(--muted2)}
+.pkey.zero{grid-column:2}
+.pin-err{font-size:11px;color:var(--red);font-family:var(--mono);min-height:14px;text-align:center}
+
+/* HEADER */
+.hdr{position:sticky;top:0;z-index:50;background:rgba(244,245,247,0.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between}
+.hdr-tag{font-family:var(--mono);font-size:8px;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase}
+.hdr-name{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--text)}
+.hdr-name b{color:var(--accent)}
+.merchant-pill{display:flex;align-items:center;gap:6px;background:rgba(30,158,107,0.08);border:1px solid rgba(30,158,107,0.25);border-radius:20px;padding:5px 10px;font-size:11px;color:var(--green);cursor:pointer;font-weight:600}
+
+/* WRAP */
+.wrap{max-width:500px;margin:0 auto;padding:14px 14px 110px;display:flex;flex-direction:column;gap:12px}
+
+/* STEP BAR */
+.step-bar{display:flex;align-items:center}
+.step-item{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
+.step-dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;color:var(--muted);transition:all 0.3s}
+.step-dot.active{border-color:var(--accent);color:var(--accent);background:rgba(79,142,247,0.08)}
+.step-dot.done{border-color:var(--green);background:var(--green);color:#fff}
+.step-lbl{font-family:var(--mono);font-size:7px;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase}
+.step-line{flex:1;height:1px;background:var(--border2);margin-bottom:16px;transition:background 0.3s}
+.step-line.done{background:var(--green)}
+
+/* SECTION LABEL */
+.slabel{font-family:var(--mono);font-size:9px;letter-spacing:0.12em;color:var(--muted);text-transform:uppercase;padding:0 2px}
+
+/* CARD + ROWS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+.frow{display:flex;align-items:center;padding:0 14px;min-height:52px;border-bottom:1px solid var(--border);gap:10px;cursor:pointer;transition:background 0.12s}
+.frow:last-child{border-bottom:none}
+.frow:active{background:rgba(79,142,247,0.04)}
+.frow.static{cursor:default}
+.frow.static:active{background:transparent}
+.ficon{font-size:15px;flex-shrink:0;width:20px;text-align:center}
+.fc{flex:1;display:flex;flex-direction:column;gap:1px;min-width:0}
+.flbl{font-size:9px;font-family:var(--mono);color:var(--muted);letter-spacing:0.08em;text-transform:uppercase}
+.fval{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fval.ph{color:var(--muted);font-weight:400}
+.fval.multi{white-space:normal;font-size:12px;line-height:1.5}
+.farr{font-size:10px;color:var(--muted2);flex-shrink:0}
+
+/* PROCESS BLOCKS */
+.blk{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,0.04);transition:border-color 0.2s}
+.blk.filled{border-color:rgba(30,158,107,0.5)}
+.blk.skipped{opacity:0.65}
+.blk-hdr{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--bg3);border-bottom:1px solid var(--border)}
+.blk-title{font-size:13px;font-weight:600;color:var(--text)}
+.blk-badge{font-family:var(--mono);font-size:9px;padding:2px 8px;border-radius:12px;border:1px solid var(--border2);color:var(--muted);background:var(--bg2)}
+.blk-badge.ok{border-color:rgba(30,158,107,0.4);color:var(--green);background:rgba(30,158,107,0.06)}
+.blk-badge.dl{border-color:rgba(214,60,60,0.4);color:var(--red);background:rgba(214,60,60,0.06)}
+.blk-status-note{padding:8px 14px;font-size:11px;color:var(--muted2);border-bottom:1px solid var(--border)}
+.blk-status-note strong{color:var(--text)}
+
+/* TOGGLE OPTS */
+.topts{display:grid;gap:8px;padding:12px 14px}
+.topt{padding:11px 10px;border-radius:10px;border:2px solid var(--border2);text-align:center;cursor:pointer;transition:all 0.15s;font-family:var(--mono);font-size:10px;letter-spacing:0.04em;color:var(--muted2);background:var(--bg3);user-select:none}
+.topt:active{transform:scale(0.97)}
+.topt.sel-yes{border-color:rgba(30,158,107,0.6);background:rgba(30,158,107,0.07);color:var(--green)}
+.topt.sel-no{border-color:rgba(214,60,60,0.5);background:rgba(214,60,60,0.07);color:var(--red)}
+.topt.sel-ship{border-color:rgba(79,142,247,0.5);background:rgba(79,142,247,0.07);color:var(--accent)}
+
+/* DATE FIELD */
+.date-row{display:flex;align-items:center;padding:0 14px;min-height:48px;border-top:1px solid var(--border);gap:10px;position:relative;cursor:pointer;transition:background 0.12s}
+.date-row:active{background:rgba(79,142,247,0.04)}
+input[type="date"].dp{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;font-size:16px;z-index:2}
+
+/* QUICK DATE CHIPS */
+.qd-row{display:flex;gap:5px;flex-wrap:wrap;padding:8px 14px 0}
+.qd{font-family:var(--mono);font-size:10px;padding:5px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted2);cursor:pointer;transition:all 0.12s;user-select:none}
+.qd:active{transform:scale(0.95)}
+.qd.on{background:rgba(79,142,247,0.1);border-color:var(--accent);color:var(--accent)}
+
+/* REASON CHIPS */
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px}
+.chip{padding:7px 12px;border-radius:20px;border:1px solid var(--border2);font-size:12px;color:var(--muted2);cursor:pointer;transition:all 0.12s;background:var(--bg3);user-select:none}
+.chip:active{transform:scale(0.96)}
+.chip.on{border-color:rgba(196,124,10,0.5);background:rgba(196,124,10,0.08);color:var(--amber)}
+.notes-wrap{padding:8px 14px 12px;border-top:1px solid var(--border)}
+textarea.notes{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--sans);font-size:13px;resize:none;min-height:44px;line-height:1.5}
+textarea.notes::placeholder{color:var(--muted)}
+
+/* CONFIRM CARD */
+.cf-card{background:rgba(79,142,247,0.04);border:1px solid rgba(79,142,247,0.2);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.cf-title{font-family:var(--mono);font-size:9px;letter-spacing:0.15em;color:var(--accent);text-transform:uppercase}
+.cf-row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.ck{font-size:12px;color:var(--muted2)}
+.cv{font-size:12px;font-weight:600;color:var(--text);text-align:right;max-width:58%}
+.cf-sep{height:1px;background:rgba(79,142,247,0.12)}
+
+/* SUBMIT BTN */
+.sub-wrap{position:fixed;bottom:0;left:0;right:0;padding:10px 14px;padding-bottom:max(18px,env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 35%);z-index:50}
+.sub-btn{width:100%;max-width:500px;margin:0 auto;display:block;padding:15px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:0.08em;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 14px rgba(79,142,247,0.28)}
+.sub-btn:active{transform:scale(0.98)}
+.sub-btn:disabled{background:var(--border2);color:var(--muted);box-shadow:none;cursor:not-allowed}
+.sub-btn.loading{background:var(--amber)}
+.sub-btn.fail{background:var(--red)}
+
+/* SUCCESS */
+.suc-scr{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:14px;text-align:center}
+.suc-icon{font-size:56px;animation:pop 0.4s cubic-bezier(0.34,1.56,0.64,1)}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+.suc-title{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--green)}
+.suc-sub{font-size:13px;color:var(--muted2);max-width:280px;line-height:1.5}
+.suc-detail{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;width:100%;max-width:360px;font-size:12px;color:var(--muted2);text-align:left;line-height:2}
+.new-btn{padding:12px 24px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;font-family:var(--mono);font-size:11px;color:var(--muted2);cursor:pointer;transition:all 0.2s}
+.new-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* TOAST */
+.toast{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-10px);background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-family:var(--mono);font-size:11px;opacity:0;transition:all 0.22s;z-index:600;white-space:nowrap;pointer-events:none;box-shadow:0 4px 10px rgba(0,0,0,0.08)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:rgba(30,158,107,0.4);color:var(--green)}
+.toast.err{border-color:rgba(214,60,60,0.4);color:var(--red)}
+.toast.warn{border-color:rgba(196,124,10,0.4);color:var(--amber)}
+
+/* DROPDOWN SHEET */
+.drop-ov{position:fixed;inset:0;background:rgba(0,0,0,0.25);z-index:400;opacity:0;pointer-events:none;transition:opacity 0.25s}
+.drop-ov.open{opacity:1;pointer-events:all}
+.drop-sheet{position:fixed;left:0;right:0;bottom:0;background:var(--bg2);border-top:1px solid var(--border);border-radius:18px 18px 0 0;z-index:401;max-height:60vh;overflow-y:auto;transform:translateY(100%);transition:transform 0.26s cubic-bezier(0.32,0.72,0,1);padding-bottom:max(14px,env(safe-area-inset-bottom));box-shadow:0 -4px 20px rgba(0,0,0,0.08)}
+.drop-sheet.open{transform:translateY(0)}
+.drop-handle{width:34px;height:4px;background:var(--border2);border-radius:2px;margin:10px auto 6px}
+.drop-title{font-family:var(--mono);font-size:9px;letter-spacing:0.12em;color:var(--muted);text-transform:uppercase;padding:4px 16px 10px;border-bottom:1px solid var(--border)}
+.drop-item{padding:14px 16px;font-size:14px;font-weight:500;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;transition:background 0.1s}
+.drop-item:last-child{border-bottom:none}
+.drop-item:active{background:rgba(79,142,247,0.06)}
+.drop-item.sel{color:var(--accent)}
+.drop-item.sel::after{content:"✓";font-size:13px;color:var(--accent)}
+
+/* BACK BTN */
+.back-btn{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--muted2);font-size:12px;padding:6px 12px;cursor:pointer;font-family:var(--mono);white-space:nowrap;flex-shrink:0;transition:all 0.15s}
+.back-btn:active{background:var(--bg4)}
+
+@media(max-width:400px){.pkey{padding:13px 8px;font-size:18px}.fval{font-size:12px}}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- PIN SCREEN -->
+<div class="pin-scr" id="pin-scr">
+  <div class="pin-badge">Merchant Portal</div>
+  <div class="pin-logo">PCS <b>CHAMPO</b></div>
+  <div class="pin-sub">Enter your 4-digit PIN to continue</div>
+  <div class="pin-card">
+    <div style="font-size:13px;color:var(--muted2)">Your PIN</div>
+    <div class="pin-dots">
+      <div class="pdot" id="d0"></div>
+      <div class="pdot" id="d1"></div>
+      <div class="pdot" id="d2"></div>
+      <div class="pdot" id="d3"></div>
+    </div>
+    <div class="pin-grid">
+      <div class="pkey" onclick="pressKey(1)">1</div>
+      <div class="pkey" onclick="pressKey(2)">2</div>
+      <div class="pkey" onclick="pressKey(3)">3</div>
+      <div class="pkey" onclick="pressKey(4)">4</div>
+      <div class="pkey" onclick="pressKey(5)">5</div>
+      <div class="pkey" onclick="pressKey(6)">6</div>
+      <div class="pkey" onclick="pressKey(7)">7</div>
+      <div class="pkey" onclick="pressKey(8)">8</div>
+      <div class="pkey" onclick="pressKey(9)">9</div>
+      <div class="pkey del" onclick="pressBack()">&#9003;</div>
+      <div class="pkey zero" onclick="pressKey(0)">0</div>
+    </div>
+    <div class="pin-err" id="pin-err"></div>
+  </div>
+</div>
+
+<!-- SUCCESS SCREEN -->
+<div class="suc-scr gone" id="suc-scr">
+  <div class="suc-icon">&#9989;</div>
+  <div class="suc-title">Update Submitted</div>
+  <div class="suc-sub">Recorded in the production sheet.</div>
+  <div class="suc-detail" id="suc-detail"></div>
+  <button class="new-btn" onclick="resetAll()">+ Submit Another Update</button>
+</div>
+
+<!-- DROPDOWN -->
+<div class="drop-ov" id="drop-ov" onclick="closeDrop()"></div>
+<div class="drop-sheet" id="drop-sheet">
+  <div class="drop-handle"></div>
+  <div class="drop-title" id="drop-title"></div>
+  <div id="drop-items"></div>
+</div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div>
+    <div class="hdr-tag">Merchant Portal</div>
+    <div class="hdr-name">PCS <b>CHAMPO</b></div>
+  </div>
+  <div class="merchant-pill gone" id="m-pill" onclick="signOut()">
+    <span>&#127970;</span>
+    <span id="m-name">-</span>
+    <span style="font-size:9px;opacity:0.6">Sign out</span>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="wrap" id="main-wrap" style="display:none">
+
+  <!-- STEP BAR + BACK -->
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="back-btn gone" id="back-btn" onclick="goBack()">&#8592; Back</button>
+    <div class="step-bar" style="flex:1">
+      <div class="step-item">
+        <div class="step-dot active" id="sd1">1</div>
+        <div class="step-lbl">PO</div>
+      </div>
+      <div class="step-line" id="sl1"></div>
+      <div class="step-item">
+        <div class="step-dot" id="sd2">2</div>
+        <div class="step-lbl">Update</div>
+      </div>
+      <div class="step-line" id="sl2"></div>
+      <div class="step-item">
+        <div class="step-dot" id="sd3">3</div>
+        <div class="step-lbl">Confirm</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 1: SELECT PO -->
+  <div id="step1">
+    <div class="slabel" style="margin-bottom:8px">Select Buyer &amp; PO</div>
+    <div class="card">
+      <div class="frow" onclick="openDrop('buyer')">
+        <div class="ficon">&#127970;</div>
+        <div class="fc"><div class="flbl">Buyer</div><div class="fval ph" id="v-buyer">Tap to select</div></div>
+        <div class="farr">&#9660;</div>
+      </div>
+      <div class="frow" onclick="openDrop('po')">
+        <div class="ficon">&#128230;</div>
+        <div class="fc"><div class="flbl">Purchase Order</div><div class="fval ph" id="v-po">Select buyer first</div></div>
+        <div class="farr">&#9660;</div>
+      </div>
+      <div class="frow static">
+        <div class="ficon">&#127991;</div>
+        <div class="fc"><div class="flbl">SKUs</div><div class="fval ph multi" id="v-sku">-</div></div>
+      </div>
+      <div class="frow static" id="row-cat" style="display:none">
+        <div class="ficon">&#127991;</div>
+        <div class="fc"><div class="flbl">H&amp;M Category</div><div class="fval" id="v-cat">-</div></div>
+      </div>
+      <div class="frow static">
+        <div class="ficon">&#128674;</div>
+        <div class="fc"><div class="flbl">Ship Window</div><div class="fval ph" id="v-ship">-</div></div>
+      </div>
+    </div>
+
+    <!-- Process status (read-only) -->
+    <div id="status-wrap" style="display:none">
+      <div class="slabel" style="margin:12px 0 8px">Current Status</div>
+      <div id="status-cards"></div>
+    </div>
+  </div>
+
+  <!-- STEP 2: UPDATE -->
+  <div id="step2" style="display:none">
+    <div class="slabel" style="margin-bottom:4px">Update for PO <span id="s2-po" style="color:var(--accent)"></span></div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted);padding:0 2px 10px;line-height:1.5">Fill Testing if applicable, then Final Inspection and Dispatch.</div>
+    <div id="blk-testing"></div>
+    <div id="blk-fi"></div>
+    <div id="blk-dispatch"></div>
+  </div>
+
+  <!-- STEP 3: CONFIRM -->
+  <div id="step3" style="display:none">
+    <div class="slabel" style="margin-bottom:8px">Review &amp; Submit</div>
+    <div class="cf-card">
+      <div class="cf-title">Check before submitting</div>
+      <div class="cf-row"><span class="ck">Merchant</span><span class="cv" id="cf-merchant">-</span></div>
+      <div class="cf-row"><span class="ck">PO</span><span class="cv" id="cf-po">-</span></div>
+      <div class="cf-sep"></div>
+      <div id="cf-lines"></div>
+    </div>
+  </div>
+
+</div><!-- end wrap -->
+
+<!-- BOTTOM BUTTON -->
+<div class="sub-wrap">
+  <button class="sub-btn" id="sub-btn" onclick="nextStep()" disabled>SELECT PO FIRST</button>
+</div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+var SHEET_ID   = '1S2ikmWM_GlWbYVuOlPQBbGEebtnO31qNcc8m7-CTaRU';
+var API_KEY    = 'AIzaSyCQ2IAWSR-cwdxqaxvBlfhwBHUiueu8vmo';
+var WEB_APP    = 'https://script.google.com/macros/s/AKfycbw8m7QPOVnZ7KKVaoz0lJ6bo-E81HSltsyMjbr421Trk0EhPHIW-LIRtyCKMYHfsjB-/exec';
+var WEB_PW     = 'pcs2025champo';
+var MERCHANTS  = { '2001': 'Merchant' }; // fallback — overwritten from MERCHANT_CONFIG sheet
+
+var DELAY_REASONS = [
+  'Freight booking delay', 'Documentation not ready', 'Buyer hold',
+  'Quality hold', 'Customs issue', 'Partial shipment pending', 'Other'
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+var mName   = null;   // logged-in merchant name
+var pinBuf  = '';
+var ptData  = [];     // PROCESS_TIMELINES rows
+var moData  = [];     // MASTER_ORDERS rows
+var step    = 1;
+var selBuyer = null, selPO = null;
+var dropCtx  = null;
+var dropItems = [];
+
+// procState: inputs for step 2
+var PS = {
+  testing:  { req: null, date: '' },
+  fi:       { done: null, date: '' },
+  dispatch: { done: null, date: '', days: 0, reason: '', notes: '' }
+};
+
+// ─── API ─────────────────────────────────────────────────────────────────────
+async function apiWrite(body) {
+  await fetch(WEB_APP, {
+    method: 'POST', mode: 'no-cors',
+    body: JSON.stringify(Object.assign({}, body, { password: WEB_PW }))
+  });
+  await new Promise(function(r) { setTimeout(r, 80); });
+}
+async function apiWriteAll(bodies) {
+  await Promise.all(bodies.map(apiWrite));
+}
+
+// ─── PIN ─────────────────────────────────────────────────────────────────────
+function pressKey(n) {
+  if (pinBuf.length >= 4) return;
+  pinBuf += String(n);
+  renderDots();
+  if (pinBuf.length === 4) setTimeout(checkPin, 150);
+}
+function pressBack() {
+  pinBuf = pinBuf.slice(0, -1);
+  renderDots();
+  document.getElementById('pin-err').textContent = '';
+  document.querySelectorAll('.pdot').forEach(function(d) { d.classList.remove('err'); });
+}
+function renderDots() {
+  for (var i = 0; i < 4; i++) {
+    document.getElementById('d' + i).className = 'pdot' + (i < pinBuf.length ? ' on' : '');
+  }
+}
+function checkPin() {
+  var name = MERCHANTS[pinBuf];
+  if (name) {
+    mName = name;
+    document.getElementById('pin-scr').classList.add('gone');
+    document.getElementById('m-pill').classList.remove('gone');
+    document.getElementById('m-name').textContent = name;
+    document.getElementById('main-wrap').style.display = 'block';
+    loadData();
+  } else {
+    document.getElementById('pin-err').textContent = 'Wrong PIN. Try again.';
+    document.querySelectorAll('.pdot').forEach(function(d) { d.classList.add('err'); });
+    setTimeout(function() {
+      pinBuf = ''; renderDots();
+      document.getElementById('pin-err').textContent = '';
+      document.querySelectorAll('.pdot').forEach(function(d) { d.classList.remove('err'); });
+    }, 800);
+  }
+}
+function signOut() {
+  if (!confirm('Sign out?')) return;
+  mName = null; pinBuf = ''; renderDots();
+  document.getElementById('m-pill').classList.add('gone');
+  document.getElementById('main-wrap').style.display = 'none';
+  document.getElementById('pin-scr').classList.remove('gone');
+}
+
+// ─── LOAD MERCHANTS FROM SHEET ────────────────────────────────────────────────
+async function loadMerchants() {
+  try {
+    var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEET_ID +
+      '/values/' + encodeURIComponent('MERCHANT_CONFIG!A:C') + '?key=' + API_KEY;
+    var r = await fetch(url);
+    if (!r.ok) return;
+    var rows = (await r.json()).values || [];
+    if (rows.length < 2) return;
+    var loaded = {};
+    rows.slice(1).forEach(function(row) {
+      var pin    = (row[0] || '').trim();
+      var name   = (row[1] || '').trim();
+      var active = (row[2] || 'YES').trim().toUpperCase();
+      if (pin && name && active === 'YES') loaded[pin] = name;
+    });
+    if (Object.keys(loaded).length > 0) MERCHANTS = loaded;
+  } catch (e) {}
+}
+
+// ─── LOAD SHEET DATA ──────────────────────────────────────────────────────────
+async function loadData() {
+  try {
+    var base = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEET_ID + '/values/';
+    var r1 = await fetch(base + encodeURIComponent('PROCESS_TIMELINES!A:AH') + '?key=' + API_KEY);
+    var r2 = await fetch(base + encodeURIComponent('MASTER_ORDERS!A:AH')    + '?key=' + API_KEY);
+    ptData = parsePT((await r1.json()).values || []);
+    moData = parseMO((await r2.json()).values || []);
+    buildDrops();
+    goStep(1);
+  } catch (e) {
+    showToast('Load error: ' + e.message, 'err');
+  }
+}
+
+function parsePT(rows) {
+  if (rows.length < 2) return [];
+  var h = rows[0];
+  function col(n) { return h.findIndex(function(x) { return x === n; }); }
+  var I = {
+    SEQ:  col('Process_Seq'), PROC: col('Process_Name'), APP: col('Applicable'),
+    STAT: col('Status'),  PLAN: col('Planned_Date'), ACT: col('Actual_Date'),
+    PO_F: col('PO_F'),    BUY_F: col('Buyer_F'),
+    PO:   col('PO'),      BUY: col('Buyer')
+  };
+  return rows.slice(1).map(function(r, i) {
+    return {
+      row:    i + 2,
+      po:     r[I.PO_F]  || r[I.PO]  || '',
+      buyer:  r[I.BUY_F] || r[I.BUY] || '',
+      seq:    parseInt(r[I.SEQ])  || 0,
+      proc:   r[I.PROC]  || '',
+      app:    r[I.APP]   || 'NO',
+      status: r[I.STAT]  || '',
+      planned:r[I.PLAN]  || '',
+      actual: r[I.ACT]   || ''
+    };
+  }).filter(function(r) { return r.seq > 0 && r.seq !== 21 && r.po; });
+}
+
+function parseMO(rows) {
+  if (rows.length < 2) return [];
+  var h = rows[0];
+  function col(n) { return h.findIndex(function(x) { return x === n; }); }
+  var I = {
+    PO:  col('PO'),     BUY: col('Buyer'),   SKU: col('SKU'),
+    COL: col('Color'),  SIZ: col('Size'),
+    SS:  col('Ship_Start'), SE: col('Ship_End'),
+    CAT: col('Category'),   STS: col('PO_Status'), MER: col('Merchant')
+  };
+  return rows.slice(1).map(function(r, i) {
+    return {
+      moRow:    i + 2,
+      po:       String(r[I.PO]  || '').trim(),
+      buyer:    String(r[I.BUY] || '').trim(),
+      sku:      String(r[I.SKU] || '').trim(),
+      color:    String(r[I.COL] || '').trim(),
+      size:     String(r[I.SIZ] || '').trim(),
+      shipStart:String(r[I.SS]  || '').trim(),
+      shipEnd:  String(r[I.SE]  || '').trim(),
+      category: String(r[I.CAT] || '').trim(),
+      poStatus: String(r[I.STS] || '').trim(),
+      merchant: String(r[I.MER] || '').trim()
+    };
+  }).filter(function(r) {
+    return r.po && r.poStatus !== 'SHIPPED' && r.merchant === mName;
+  });
+}
+
+// ─── DROPDOWN DATA ────────────────────────────────────────────────────────────
+function buildDrops() {
+  var buyers = {}, pos = {};
+  moData.forEach(function(r) { buyers[r.buyer] = true; });
+  // Buyers dropdown
+  window._dropBuyers = Object.keys(buyers).sort();
+}
+
+// ─── PO SELECTION ─────────────────────────────────────────────────────────────
+function onBuyer(b) {
+  selBuyer = b; selPO = null;
+  setFV('v-buyer', b);
+  setFV('v-po', 'Select PO', true);
+  setFV('v-sku', '-', true);
+  setFV('v-ship', '-', true);
+  document.getElementById('status-wrap').style.display = 'none';
+  document.getElementById('row-cat').style.display = 'none';
+  updBtn();
+}
+
+function onPO(po) {
+  selPO = po;
+  setFV('v-po', po);
+  var rows = moData.filter(function(r) { return r.po === po; });
+  var seen = {}, skus = [];
+  rows.forEach(function(r) {
+    var k = [r.sku, r.color, r.size].filter(Boolean).join(' · ');
+    if (!seen[k]) { seen[k] = true; skus.push(k); }
+  });
+  var skuEl = document.getElementById('v-sku');
+  skuEl.innerHTML = skus.map(function(s) { return '<div>' + s + '</div>'; }).join('');
+  skuEl.className = 'fval multi';
+  var r0 = rows[0];
+  if (r0) {
+    setFV('v-ship', r0.shipStart && r0.shipEnd ? r0.shipStart + ' → ' + r0.shipEnd : '-', !(r0.shipStart));
+    if (r0.category && r0.buyer === 'H&M') {
+      document.getElementById('v-cat').textContent = r0.category;
+      document.getElementById('row-cat').style.display = '';
+    }
+  }
+  renderStatusCards(po);
+  document.getElementById('status-wrap').style.display = '';
+  updBtn();
+}
+
+function renderStatusCards(po) {
+  var checks = [
+    { seq: 17, label: 'Testing' },
+    { seq: 20, label: 'Final Inspection' }
+  ];
+  var html = checks.map(function(c) {
+    var row = ptData.find(function(r) { return r.po === po && r.seq === c.seq && r.app === 'YES'; });
+    var status = row ? (row.status || 'Pending') : 'N/A';
+    var col = status === 'COMPLETE' ? 'color:var(--green)' :
+              status === 'DELAY'    ? 'color:var(--red)'   : 'color:var(--muted)';
+    var planned = row && row.planned ? ' · Due: ' + row.planned : '';
+    return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+      '<div>' +
+        '<div style="font-size:13px;font-weight:600">' + c.label + '</div>' +
+        (planned ? '<div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px">' + planned + '</div>' : '') +
+      '</div>' +
+      '<span style="font-family:var(--mono);font-size:9px;padding:3px 9px;border-radius:12px;border:1px solid var(--border2);' + col + '">' + status + '</span>' +
+    '</div>';
+  }).join('');
+  document.getElementById('status-cards').innerHTML = html;
+}
+
+// ─── STEP 2 BLOCKS ────────────────────────────────────────────────────────────
+function renderAllBlocks() {
+  var testRow = ptData.find(function(r) { return r.po === selPO && r.seq === 17 && r.app === 'YES'; });
+  var fiRow   = ptData.find(function(r) { return r.po === selPO && r.seq === 20 && r.app === 'YES'; });
+  document.getElementById('blk-testing').innerHTML  = buildTestingBlock(testRow);
+  document.getElementById('blk-fi').innerHTML       = buildFIBlock(fiRow);
+  document.getElementById('blk-dispatch').innerHTML = buildDispatchBlock();
+}
+
+function statusBadge(s) {
+  var t = s.testing;
+  if (t.req === false) return ['SKIPPED', 'blk-badge'];
+  if (t.req === true && t.date) return [fmtShort(new Date(t.date + 'T00:00:00')), 'blk-badge ok'];
+  return ['Not filled', 'blk-badge'];
+}
+
+function buildTestingBlock(row) {
+  var s = PS.testing;
+  var sheetStatus = row ? (row.status || 'Pending') : 'Not applicable in this PO';
+  var badge = s.req === false ? 'SKIPPED' : (s.req === true && s.date ? fmtShort(new Date(s.date + 'T00:00:00')) : 'Not filled');
+  var badgeCls = s.req === false ? 'blk-badge' : (s.req === true && s.date ? 'blk-badge ok' : 'blk-badge');
+  var filledCls = s.req === false ? ' skipped' : (s.req === true && s.date ? ' filled' : '');
+
+  var inner = '<div class="topts" style="grid-template-columns:1fr 1fr">' +
+    '<div class="topt' + (s.req === true  ? ' sel-yes' : '') + '" onclick="setTesting(true)">&#10003; YES — fill date</div>' +
+    '<div class="topt' + (s.req === false ? ' sel-no'  : '') + '" onclick="setTesting(false)">NOT REQUIRED</div>' +
+  '</div>';
+
+  if (s.req === true) {
+    inner += buildDateSection('testing', s.date);
+  }
+
+  return '<div class="blk' + filledCls + '">' +
+    '<div class="blk-hdr"><span class="blk-title">1. Testing</span><span class="' + badgeCls + '">' + badge + '</span></div>' +
+    '<div class="blk-status-note">Sheet: <strong>' + sheetStatus + '</strong></div>' +
+    inner +
+  '</div>';
+}
+
+function buildFIBlock(row) {
+  var s = PS.fi;
+  var sheetStatus = row ? (row.status || 'Pending') : 'Not in sheet';
+  var badge = s.done === null ? 'Not filled' : (s.done && s.date ? fmtShort(new Date(s.date + 'T00:00:00')) : s.done === false ? 'DELAYED' : 'Pick date');
+  var badgeCls = s.done && s.date ? 'blk-badge ok' : s.done === false ? 'blk-badge dl' : 'blk-badge';
+  var filledCls = s.done && s.date ? ' filled' : s.done === false ? ' skipped' : '';
+
+  var inner = '<div class="topts" style="grid-template-columns:1fr 1fr">' +
+    '<div class="topt' + (s.done === true  ? ' sel-yes' : '') + '" onclick="setFI(true)">&#10003; DONE</div>' +
+    '<div class="topt' + (s.done === false ? ' sel-no'  : '') + '" onclick="setFI(false)">&#10005; NOT YET</div>' +
+  '</div>';
+
+  if (s.done === true) {
+    inner += buildDateSection('fi', s.date);
+  } else if (s.done === false) {
+    inner += '<div style="padding:6px 14px 12px;font-size:11px;color:var(--red)">&#9888; FI not done — will be logged as delayed.</div>';
+  }
+
+  return '<div class="blk' + filledCls + '">' +
+    '<div class="blk-hdr"><span class="blk-title">2. Final Inspection</span><span class="' + badgeCls + '">' + badge + '</span></div>' +
+    '<div class="blk-status-note">Sheet: <strong>' + sheetStatus + '</strong></div>' +
+    inner +
+  '</div>';
+}
+
+function buildDispatchBlock() {
+  var s = PS.dispatch;
+  var badge = s.done === null ? 'Not filled' :
+              s.done && s.date ? 'Shipped ' + fmtShort(new Date(s.date + 'T00:00:00')) :
+              s.done === false && s.reason ? 'DELAYED' : 'Fill details';
+  var badgeCls = s.done && s.date ? 'blk-badge ok' : s.done === false && s.reason ? 'blk-badge dl' : 'blk-badge';
+  var filledCls = s.done && s.date ? ' filled' : s.done === false && s.reason ? ' filled' : '';
+
+  var inner = '<div class="topts" style="grid-template-columns:1fr 1fr">' +
+    '<div class="topt' + (s.done === true  ? ' sel-ship' : '') + '" onclick="setDispatch(true)">&#128674; YES — SHIPPED</div>' +
+    '<div class="topt' + (s.done === false ? ' sel-no'   : '') + '" onclick="setDispatch(false)">&#10005; NOT YET</div>' +
+  '</div>';
+
+  if (s.done === true) {
+    inner += buildDateSection('dispatch', s.date);
+  } else if (s.done === false) {
+    inner += '<div style="padding:8px 14px 2px;font-size:11px;color:var(--muted)">Days delayed:</div>';
+    inner += '<div style="padding:4px 14px 10px;display:flex;gap:5px;flex-wrap:wrap">';
+    [3,5,7,10,14,21,30].forEach(function(n) {
+      inner += '<div class="qd' + (s.days === n ? ' on' : '') + '" onclick="setDelayDays(' + n + ')">' + n + 'd</div>';
+    });
+    inner += '</div>';
+    inner += '<div style="padding:0 14px 4px;font-size:11px;color:var(--muted)">Reason:</div>';
+    inner += '<div class="chips">';
+    DELAY_REASONS.forEach(function(reason) {
+      var esc = reason.replace(/'/g, "&#39;");
+      inner += '<div class="chip' + (s.reason === reason ? ' on' : '') + '" onclick="setDispatchReason(&#39;' + esc + '&#39;)">' + reason + '</div>';
+    });
+    inner += '</div>';
+    inner += '<div class="notes-wrap"><textarea class="notes" placeholder="Additional notes..." rows="2" oninput="PS.dispatch.notes=this.value">' + (s.notes || '') + '</textarea></div>';
+  }
+
+  return '<div class="blk' + filledCls + '">' +
+    '<div class="blk-hdr"><span class="blk-title">3. Dispatched from Factory?</span><span class="' + badgeCls + '">' + badge + '</span></div>' +
+    inner +
+  '</div>';
+}
+
+function buildDateSection(which, curDate) {
+  var offsets = [0, -1, -2, -3, -5, -7];
+  var labels  = ['Today', '-1d', '-2d', '-3d', '-5d', '-7d'];
+  var qdHtml = '<div class="qd-row">';
+  offsets.forEach(function(n, i) {
+    var d = new Date(); d.setDate(d.getDate() + n);
+    var iso = toISO(d);
+    qdHtml += '<div class="qd' + (curDate === iso ? ' on' : '') + '" onclick="setQuickDate(&#39;' + which + '&#39;,' + n + ')">' + labels[i] + '</div>';
+  });
+  qdHtml += '</div>';
+
+  var dateHtml = '<div class="date-row" onclick="openDatePicker(&#39;dp-' + which + '&#39;)">' +
+    '<div class="ficon">&#128197;</div>' +
+    '<div class="fc"><div class="flbl">Date</div><div class="fval' + (curDate ? '' : ' ph') + '" id="dv-' + which + '">' + (curDate ? fmtFull(new Date(curDate + 'T00:00:00')) : 'Tap to pick') + '</div></div>' +
+    '<div class="farr">&#9660;</div>' +
+    '<input type="date" class="dp" id="dp-' + which + '" value="' + (curDate || '') + '" onchange="onDateChange(&#39;' + which + '&#39;,this.value)">' +
+  '</div>';
+
+  return qdHtml + dateHtml;
+}
+
+// ─── BLOCK SETTERS ────────────────────────────────────────────────────────────
+function setTesting(v) {
+  PS.testing.req = v;
+  if (!v) PS.testing.date = '';
+  document.getElementById('blk-testing').innerHTML = buildTestingBlock(
+    ptData.find(function(r) { return r.po === selPO && r.seq === 17 && r.app === 'YES'; })
+  );
+  updBtn();
+}
+function setFI(v) {
+  PS.fi.done = v;
+  if (!v) PS.fi.date = '';
+  document.getElementById('blk-fi').innerHTML = buildFIBlock(
+    ptData.find(function(r) { return r.po === selPO && r.seq === 20 && r.app === 'YES'; })
+  );
+  updBtn();
+}
+function setDispatch(v) {
+  PS.dispatch.done = v;
+  if (v) { PS.dispatch.days = 0; PS.dispatch.reason = ''; PS.dispatch.notes = ''; }
+  else   { PS.dispatch.date = ''; }
+  document.getElementById('blk-dispatch').innerHTML = buildDispatchBlock();
+  updBtn();
+}
+function setDelayDays(n) {
+  PS.dispatch.days = n;
+  document.getElementById('blk-dispatch').innerHTML = buildDispatchBlock();
+  updBtn();
+}
+function setDispatchReason(r) {
+  var ta = document.querySelector('#blk-dispatch .notes');
+  if (ta) PS.dispatch.notes = ta.value;
+  PS.dispatch.reason = r;
+  document.getElementById('blk-dispatch').innerHTML = buildDispatchBlock();
+  updBtn();
+}
+function onDateChange(which, val) {
+  if (!val) return;
+  if (which === 'testing')  PS.testing.date   = val;
+  else if (which === 'fi')  PS.fi.date        = val;
+  else                      PS.dispatch.date  = val;
+  var el = document.getElementById('dv-' + which);
+  if (el) { el.textContent = fmtFull(new Date(val + 'T00:00:00')); el.className = 'fval'; }
+  // Refresh quick date highlights
+  var block = which === 'testing' ? 'blk-testing' : which === 'fi' ? 'blk-fi' : 'blk-dispatch';
+  if (which === 'testing') document.getElementById('blk-testing').innerHTML = buildTestingBlock(ptData.find(function(r){return r.po===selPO&&r.seq===17&&r.app==='YES';}));
+  else if (which === 'fi') document.getElementById('blk-fi').innerHTML = buildFIBlock(ptData.find(function(r){return r.po===selPO&&r.seq===20&&r.app==='YES';}));
+  else document.getElementById('blk-dispatch').innerHTML = buildDispatchBlock();
+  updBtn();
+}
+function setQuickDate(which, offset) {
+  var d = new Date(); d.setDate(d.getDate() + offset);
+  var iso = toISO(d);
+  onDateChange(which, iso);
+}
+function openDatePicker(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  try { el.showPicker(); } catch(e) { el.focus(); }
+}
+
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+function goStep(n) {
+  step = n;
+  document.getElementById('step1').style.display = n === 1 ? '' : 'none';
+  document.getElementById('step2').style.display = n === 2 ? '' : 'none';
+  document.getElementById('step3').style.display = n === 3 ? '' : 'none';
+  for (var i = 1; i <= 3; i++) {
+    document.getElementById('sd' + i).className = 'step-dot' + (i < n ? ' done' : i === n ? ' active' : '');
+    if (i < 3) document.getElementById('sl' + i).className = 'step-line' + (i < n ? ' done' : '');
+  }
+  document.getElementById('back-btn').className = n === 1 ? 'back-btn gone' : 'back-btn';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  updBtn();
+}
+function goBack() {
+  if (step === 2) goStep(1);
+  else if (step === 3) goStep(2);
+}
+
+function nextStep() {
+  if (step === 1) {
+    if (!selPO) { showToast('Select PO first', 'warn'); return; }
+    // Reset state for fresh entry
+    PS = {
+      testing:  { req: null, date: '' },
+      fi:       { done: null, date: '' },
+      dispatch: { done: null, date: '', days: 0, reason: '', notes: '' }
+    };
+    document.getElementById('s2-po').textContent = selPO;
+    renderAllBlocks();
+    goStep(2);
+    return;
+  }
+  if (step === 2) {
+    if (PS.fi.done === null)               { showToast('Fill Final Inspection status', 'warn'); return; }
+    if (PS.fi.done === true && !PS.fi.date){ showToast('Pick FI completion date', 'warn'); return; }
+    if (PS.dispatch.done === null)          { showToast('Fill Dispatch status', 'warn'); return; }
+    if (PS.dispatch.done === true && !PS.dispatch.date)  { showToast('Pick dispatch date', 'warn'); return; }
+    if (PS.dispatch.done === false && !PS.dispatch.reason){ showToast('Select delay reason', 'warn'); return; }
+    buildConfirm();
+    goStep(3);
+    return;
+  }
+  if (step === 3) { submitForm(); return; }
+}
+
+// ─── CONFIRM ──────────────────────────────────────────────────────────────────
+function buildConfirm() {
+  document.getElementById('cf-merchant').textContent = mName;
+  document.getElementById('cf-po').textContent = selPO + ' (' + selBuyer + ')';
+  var lines = [];
+  if (PS.testing.req === false) {
+    lines.push({ k: 'Testing', v: 'Not required — skipped' });
+  } else if (PS.testing.req === true && PS.testing.date) {
+    lines.push({ k: 'Testing', v: 'Done — ' + fmtShort(new Date(PS.testing.date + 'T00:00:00')) });
+  }
+  if (PS.fi.done === true && PS.fi.date) {
+    lines.push({ k: 'Final Inspection', v: 'Done — ' + fmtShort(new Date(PS.fi.date + 'T00:00:00')) });
+  } else if (PS.fi.done === false) {
+    lines.push({ k: 'Final Inspection', v: '⚠ Not done — delayed' });
+  }
+  if (PS.dispatch.done === true && PS.dispatch.date) {
+    lines.push({ k: 'Dispatch', v: '🚢 Shipped — ' + fmtShort(new Date(PS.dispatch.date + 'T00:00:00')) });
+  } else if (PS.dispatch.done === false) {
+    var note = PS.dispatch.notes ? ' — ' + PS.dispatch.notes : '';
+    lines.push({ k: 'Dispatch', v: 'Delayed ' + PS.dispatch.days + 'd — ' + PS.dispatch.reason + note });
+  }
+  document.getElementById('cf-lines').innerHTML = lines.map(function(l) {
+    return '<div class="cf-row"><span class="ck">' + l.k + '</span><span class="cv">' + l.v + '</span></div>';
+  }).join('');
+}
+
+// ─── SUBMIT ───────────────────────────────────────────────────────────────────
+async function submitForm() {
+  var btn = document.getElementById('sub-btn');
+  btn.className = 'sub-btn loading';
+  btn.textContent = 'Submitting...';
+  btn.disabled = true;
+  try {
+    var now = new Date();
+    var ts  = now.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    var updates = [];
+    var calls   = [];
+
+    // Testing
+    if (PS.testing.req === true && PS.testing.date) {
+      ptData.filter(function(r) { return r.po === selPO && r.seq === 17 && r.app === 'YES'; })
+        .forEach(function(r) {
+          updates.push({ sheet: 'PROCESS_TIMELINES', row: r.row, col: 14, value: fmtSheet(new Date(PS.testing.date + 'T00:00:00')) });
+          updates.push({ sheet: 'PROCESS_TIMELINES', row: r.row, col: 17, value: 'COMPLETE' });
+          updates.push({ sheet: 'PROCESS_TIMELINES', row: r.row, col: 32, value: 'Updated: ' + mName + ' | ' + ts });
+        });
+    }
+
+    // Final Inspection
+    ptData.filter(function(r) { return r.po === selPO && r.seq === 20 && r.app === 'YES'; })
+      .forEach(function(r) {
+        if (PS.fi.done === true && PS.fi.date) {
+          updates.push({ sheet: 'PROCESS_TIMELINES', row: r.row, col: 14, value: fmtSheet(new Date(PS.fi.date + 'T00:00:00')) });
+          updates.push({ sheet: 'PROCESS_TIMELINES', row: r.row, col: 17, value: 'COMPLETE' });
+          updates.push({ sheet: 'PROCESS_TIMELINES', row: r.row, col: 32, value: 'Updated: ' + mName + ' | ' + ts });
+        } else if (PS.fi.done === false) {
+          updates.push({ sheet: 'PROCESS_TIMELINES', row: r.row, col: 17, value: 'DELAY' });
+          updates.push({ sheet: 'PROCESS_TIMELINES', row: r.row, col: 32, value: 'FI not done | ' + mName + ' | ' + ts });
+        }
+      });
+
+    // Dispatch
+    if (PS.dispatch.done === true && PS.dispatch.date) {
+      calls.push({ action: 'markShipped', po: selPO, shippedDate: fmtSheet(new Date(PS.dispatch.date + 'T00:00:00')), shippedBy: mName });
+    }
+
+    // Log row
+    var logRow = [ts, mName, selPO, selBuyer,
+      PS.testing.req === false ? 'SKIP' : (PS.testing.req && PS.testing.date ? PS.testing.date : ''),
+      PS.fi.done && PS.fi.date ? PS.fi.date : (PS.fi.done === false ? 'DELAYED' : ''),
+      PS.dispatch.done ? PS.dispatch.date : 'DELAYED',
+      PS.dispatch.done === false ? (PS.dispatch.days + 'd — ' + PS.dispatch.reason + (PS.dispatch.notes ? ' — ' + PS.dispatch.notes : '')) : ''
+    ];
+
+    if (updates.length) calls.push({ action: 'writeCells', updates: updates });
+    calls.push({ action: 'appendRow', sheet: 'MERCHANT_LOG', values: logRow });
+    await apiWriteAll(calls);
+
+    // Success screen
+    var s = PS;
+    document.getElementById('suc-detail').innerHTML =
+      '<strong>' + mName + '</strong><br>' +
+      'PO: <strong>' + selPO + '</strong> (' + selBuyer + ')<br>' +
+      (s.testing.req === false ? 'Testing: <strong>Skipped</strong><br>' :
+       s.testing.req && s.testing.date ? 'Testing: <strong>Done ' + fmtShort(new Date(s.testing.date + 'T00:00:00')) + '</strong><br>' : '') +
+      'Final Inspection: <strong style="color:' + (s.fi.done && s.fi.date ? 'var(--green)' : 'var(--red)') + '">' +
+        (s.fi.done && s.fi.date ? 'Done ' + fmtShort(new Date(s.fi.date + 'T00:00:00')) : 'Delayed') + '</strong><br>' +
+      'Dispatch: <strong style="color:' + (s.dispatch.done ? 'var(--green)' : 'var(--red)') + '">' +
+        (s.dispatch.done && s.dispatch.date ? '&#128674; Shipped ' + fmtShort(new Date(s.dispatch.date + 'T00:00:00')) : 'Delayed ' + s.dispatch.days + 'd') + '</strong>';
+
+    document.getElementById('suc-scr').classList.remove('gone');
+
+  } catch(e) {
+    btn.className = 'sub-btn fail';
+    btn.textContent = '✗ Failed — tap to retry';
+    btn.disabled = false;
+    showToast('Error: ' + e.message, 'err');
+    setTimeout(function() { btn.className = 'sub-btn'; updBtn(); }, 3000);
+  }
+}
+
+function resetAll() {
+  document.getElementById('suc-scr').classList.add('gone');
+  selPO = null; selBuyer = null;
+  PS = { testing:{req:null,date:''}, fi:{done:null,date:''}, dispatch:{done:null,date:'',days:0,reason:'',notes:''} };
+  setFV('v-buyer', 'Tap to select', true);
+  setFV('v-po', 'Select buyer first', true);
+  setFV('v-sku', '-', true);
+  setFV('v-ship', '-', true);
+  document.getElementById('status-wrap').style.display = 'none';
+  document.getElementById('row-cat').style.display = 'none';
+  goStep(1);
+}
+
+// ─── UPDATE BUTTON ────────────────────────────────────────────────────────────
+function updBtn() {
+  var btn = document.getElementById('sub-btn');
+  if (step === 1) {
+    btn.disabled = !selPO;
+    btn.className = 'sub-btn';
+    btn.textContent = selPO ? 'Proceed to Update →' : 'SELECT PO FIRST';
+    return;
+  }
+  if (step === 2) {
+    var fiOk = PS.fi.done !== null && (PS.fi.done === false || (PS.fi.done && PS.fi.date));
+    var dOk  = PS.dispatch.done !== null && (
+      (PS.dispatch.done === true && PS.dispatch.date) ||
+      (PS.dispatch.done === false && PS.dispatch.reason)
+    );
+    btn.disabled = !(fiOk && dOk);
+    btn.className = 'sub-btn';
+    btn.textContent = fiOk && dOk ? 'Review & Confirm →' : (!fiOk ? 'Fill Final Inspection' : 'Fill Dispatch Status');
+    return;
+  }
+  if (step === 3) {
+    btn.disabled = false;
+    btn.className = 'sub-btn';
+    btn.textContent = 'Submit Update ✓';
+  }
+}
+
+// ─── DROPDOWN ─────────────────────────────────────────────────────────────────
+function openDrop(ctx) {
+  if (ctx === 'po' && !selBuyer) return;
+  dropCtx = ctx;
+  var items = [];
+  if (ctx === 'buyer') {
+    var seen = {};
+    moData.forEach(function(r) { if (r.buyer && !seen[r.buyer]) { seen[r.buyer] = true; items.push({ v: r.buyer, l: r.buyer }); } });
+    items.sort(function(a,b) { return a.l.localeCompare(b.l); });
+  } else {
+    var seen2 = {};
+    moData.filter(function(r) { return r.buyer === selBuyer; }).forEach(function(r) { if (r.po && !seen2[r.po]) { seen2[r.po] = true; items.push({ v: r.po, l: r.po }); } });
+    items.sort(function(a,b) { return a.l.localeCompare(b.l); });
+  }
+  if (!items.length) { showToast('No POs found for you', 'warn'); return; }
+  dropItems = items;
+  document.getElementById('drop-title').textContent = ctx === 'buyer' ? 'Select Buyer' : 'Select PO';
+  var curVal = ctx === 'buyer' ? selBuyer : selPO;
+  document.getElementById('drop-items').innerHTML = items.map(function(item, i) {
+    return '<div class="drop-item' + (item.v === curVal ? ' sel' : '') + '" onclick="pickDrop(' + i + ')">' + item.l + '</div>';
+  }).join('');
+  document.getElementById('drop-ov').classList.add('open');
+  document.getElementById('drop-sheet').classList.add('open');
+}
+function closeDrop() {
+  document.getElementById('drop-ov').classList.remove('open');
+  document.getElementById('drop-sheet').classList.remove('open');
+  dropCtx = null;
+}
+function pickDrop(i) {
+  var item = dropItems[i];
+  var ctx = dropCtx;   // save before closeDrop nulls it
+  closeDrop();
+  if (ctx === 'buyer') onBuyer(item.v);
+  else onPO(item.v);
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function setFV(id, txt, isPlaceholder) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = txt;
+  el.className = isPlaceholder ? 'fval ph' : 'fval';
+}
+function fmtShort(d) { return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }); }
+function fmtFull(d)  { return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }); }
+function fmtSheet(d) { return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).replace(/ /g, '-'); }
+function toISO(d)    { return d.toISOString().split('T')[0]; }
+function showToast(msg, type) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + (type || '');
+  setTimeout(function() { el.className = 'toast'; }, 2800);
+}
+
+// ─── SWIPE CLOSE DROPDOWN ────────────────────────────────────────────────────
+var _ty = 0;
+document.getElementById('drop-sheet').addEventListener('touchstart', function(e) { _ty = e.touches[0].clientY; }, { passive: true });
+document.getElementById('drop-sheet').addEventListener('touchmove', function(e) { if (e.touches[0].clientY - _ty > 60) closeDrop(); }, { passive: true });
+
+// ─── KEYBOARD PIN ────────────────────────────────────────────────────────────
+window.addEventListener('keydown', function(e) {
+  if (!document.getElementById('pin-scr').classList.contains('gone')) {
+    if (e.key >= '0' && e.key <= '9') pressKey(parseInt(e.key));
+    else if (e.key === 'Backspace') pressBack();
+  }
+});
+
+// ─── BOOT ────────────────────────────────────────────────────────────────────
+window.addEventListener('load', function() {
+  loadMerchants();
+});
+</script>
+</body>
+</html>
