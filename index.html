@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCS CHAMPO — Production Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #0D0F14;
+    --bg2:     #13161E;
+    --bg3:     #1A1E2A;
+    --border:  #252A38;
+    --text:    #E8EAF0;
+    --muted:   #5A6070;
+    --accent:  #4F8EF7;
+    --green:   #2ECC71;
+    --red:     #E74C3C;
+    --amber:   #F39C12;
+    --purple:  #9B59B6;
+    --mono:    'Space Mono', monospace;
+    --sans:    'DM Sans', sans-serif;
+  }
+  body.light {
+    --bg:#F4F5F7; --bg2:#FFFFFF; --bg3:#ECEEF2;
+    --border:#D8DCE6; --text:#1A1E2A; --muted:#8A92A6;
+  }
+  body.light::before { opacity:0.08; }
+  .theme-btn { font-family:var(--mono); font-size:12px; padding:5px 10px; background:var(--bg3); border:1px solid var(--border); border-radius:6px; color:var(--muted); cursor:pointer; margin-left:8px; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; overflow-x:hidden; }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background-image: linear-gradient(var(--border) 1px,transparent 1px), linear-gradient(90deg,var(--border) 1px,transparent 1px);
+    background-size:40px 40px; opacity:0.3; pointer-events:none; z-index:0;
+  }
+  .wrap { position:relative; z-index:1; max-width:1400px; margin:0 auto; padding:24px; }
+
+  /* ── HEADER ── */
+  header { display:flex; align-items:flex-end; justify-content:space-between; padding-bottom:24px; border-bottom:1px solid var(--border); margin-bottom:28px; }
+  .brand-tag { font-family:var(--mono); font-size:10px; letter-spacing:0.2em; color:var(--accent); text-transform:uppercase; margin-bottom:6px; }
+  .brand-name { font-family:var(--mono); font-size:26px; font-weight:700; letter-spacing:-0.02em; }
+  .brand-name span { color:var(--accent); }
+  .header-right { text-align:right; }
+  #live-clock { font-family:var(--mono); font-size:28px; font-weight:700; letter-spacing:-0.02em; }
+  #live-date  { font-size:12px; color:var(--muted); margin-top:2px; font-family:var(--mono); }
+
+  /* ── CONFIG BANNER (shown when not configured) ── */
+  .config-banner {
+    background: rgba(79,142,247,0.08);
+    border: 1px solid rgba(79,142,247,0.3);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .config-banner.hidden { display:none; }
+  .config-text { font-size:13px; color:var(--accent); }
+  .config-text strong { font-family:var(--mono); font-size:11px; }
+  .config-inputs { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .config-input {
+    background: var(--bg3); border: 1px solid var(--border); border-radius:4px;
+    color:var(--text); font-family:var(--mono); font-size:11px;
+    padding: 6px 10px; width: 280px; outline:none;
+  }
+  .config-input:focus { border-color:var(--accent); }
+  .config-input.short { width:160px; }
+  .config-btn {
+    font-family:var(--mono); font-size:10px; padding:7px 16px;
+    background:var(--accent); border:none; border-radius:4px;
+    color:#fff; cursor:pointer; letter-spacing:0.05em; transition:opacity 0.2s;
+  }
+  .config-btn:hover { opacity:0.85; }
+
+  /* ── LOADING / ERROR STATE ── */
+  .state-overlay {
+    position:fixed; inset:0; background:rgba(13,15,20,0.92);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    z-index:100; gap:16px;
+  }
+  .state-overlay.hidden { display:none; }
+  .spinner {
+    width:36px; height:36px; border:3px solid var(--border);
+    border-top-color:var(--accent); border-radius:50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .state-msg { font-family:var(--mono); font-size:13px; color:var(--muted); }
+  .state-err { font-family:var(--mono); font-size:12px; color:var(--red); max-width:400px; text-align:center; line-height:1.6; }
+  .retry-btn {
+    font-family:var(--mono); font-size:11px; padding:8px 20px;
+    background:var(--bg3); border:1px solid var(--border); border-radius:4px;
+    color:var(--text); cursor:pointer; margin-top:8px;
+  }
+
+  /* ── LAST UPDATED BAR ── */
+  .updated-bar {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:20px; padding:8px 14px;
+    background:var(--bg3); border:1px solid var(--border); border-radius:6px;
+  }
+  .updated-text { font-family:var(--mono); font-size:10px; color:var(--muted); }
+  .updated-text span { color:var(--green); }
+  .refresh-btn {
+    font-family:var(--mono); font-size:10px; padding:5px 12px;
+    background:transparent; border:1px solid var(--border); border-radius:4px;
+    color:var(--muted); cursor:pointer; letter-spacing:0.08em; transition:all 0.2s;
+  }
+  .refresh-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .refresh-btn.spinning { color:var(--accent); border-color:var(--accent); }
+
+  /* ── STAT CARDS ── */
+  .stat-row { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:28px; }
+  .stat-card {
+    background:var(--bg2); border:1px solid var(--border); border-radius:8px;
+    padding:18px 20px; position:relative; overflow:hidden;
+    transition:transform 0.2s, border-color 0.2s; cursor:default;
+  }
+  .stat-card:hover { transform:translateY(-2px); border-color:var(--accent); }
+  .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+  .stat-card.blue::before   { background:var(--accent); }
+  .stat-card.green::before  { background:var(--green); }
+  .stat-card.red::before    { background:var(--red); }
+  .stat-card.amber::before  { background:var(--amber); }
+  .stat-card.purple::before { background:var(--purple); }
+  .stat-label { font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); font-family:var(--mono); margin-bottom:8px; }
+  .stat-value { font-family:var(--mono); font-size:38px; font-weight:700; line-height:1; margin-bottom:4px; }
+  .stat-card.blue   .stat-value { color:var(--accent); }
+  .stat-card.green  .stat-value { color:var(--green); }
+  .stat-card.red    .stat-value { color:var(--red); }
+  .stat-card.amber  .stat-value { color:var(--amber); }
+  .stat-card.purple .stat-value { color:var(--purple); }
+  .stat-sub { font-size:11px; color:var(--muted); }
+
+  /* ── PANELS ── */
+  .main-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:28px; }
+  .panel { background:var(--bg2); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .panel.span2 { grid-column:span 2; }
+  .panel.span3 { grid-column:span 3; }
+  .panel-header { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--border); background:var(--bg3); }
+  .panel-title  { font-family:var(--mono); font-size:11px; letter-spacing:0.15em; text-transform:uppercase; color:var(--text); }
+  .panel-badge  { font-family:var(--mono); font-size:10px; padding:2px 8px; border-radius:20px; background:var(--border); color:var(--muted); }
+  .panel-badge.alert { background:rgba(231,76,60,0.15); color:var(--red); }
+  .panel-badge.ok    { background:rgba(46,204,113,0.15); color:var(--green); }
+
+  /* ── TABLE ── */
+  .data-table { width:100%; border-collapse:collapse; }
+  .data-table th { padding:8px 14px; font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); font-family:var(--mono); text-align:left; border-bottom:1px solid var(--border); background:var(--bg3); }
+  .data-table td { padding:9px 14px; font-size:12px; border-bottom:1px solid rgba(37,42,56,0.5); vertical-align:middle; }
+  .data-table tr:last-child td { border-bottom:none; }
+  .data-table tr:hover td { background:rgba(79,142,247,0.04); }
+
+  /* ── STATUS PILLS ── */
+  .pill { display:inline-block; font-family:var(--mono); font-size:9px; padding:3px 8px; border-radius:4px; letter-spacing:0.05em; font-weight:700; }
+  .pill[style*='cursor:pointer']:hover { opacity:0.75; }
+  .pill-on-time  { background:rgba(46,204,113,0.15); color:var(--green); }
+  .pill-delay    { background:rgba(231,76,60,0.15);  color:var(--red); }
+  .pill-progress { background:rgba(243,156,18,0.15); color:var(--amber); }
+  .pill-na       { background:rgba(90,96,112,0.15);  color:var(--muted); }
+
+  /* ── TODAY LIST ── */
+  .today-item { display:flex; align-items:center; gap:12px; padding:10px 16px; border-bottom:1px solid rgba(37,42,56,0.5); transition:background 0.15s; }
+  .today-item:hover { background:rgba(79,142,247,0.04); }
+  .today-item:last-child { border-bottom:none; }
+  .today-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .today-info { flex:1; }
+  .today-process { font-size:12px; font-weight:500; }
+  .today-meta { font-size:10px; color:var(--muted); margin-top:1px; font-family:var(--mono); }
+  .today-owner { font-family:var(--mono); font-size:10px; color:var(--accent); background:rgba(79,142,247,0.1); padding:2px 7px; border-radius:4px; }
+
+  /* ── KPI BARS ── */
+  .kpi-row { display:flex; align-items:center; gap:10px; padding:10px 16px; border-bottom:1px solid rgba(37,42,56,0.5); flex-wrap:wrap; }
+  .kpi-row:last-child { border-bottom:none; }
+  .kpi-name { font-size:12px; width:76px; flex-shrink:0; font-weight:500; }
+  .kpi-chips { display:flex; gap:4px; flex-shrink:0; }
+  .kpi-chip { font-family:var(--mono); font-size:9px; padding:2px 6px; border-radius:4px; }
+  .kpi-chip.done    { background:rgba(46,204,113,0.12); color:var(--green); }
+  .kpi-chip.late    { background:rgba(231,76,60,0.12);  color:var(--red); }
+  .kpi-chip.risk    { background:rgba(243,156,18,0.12); color:var(--amber); }
+  .kpi-chip.pending { background:rgba(90,96,112,0.1);   color:var(--muted); }
+  .kpi-bar-wrap { flex:1; background:var(--border); border-radius:4px; height:6px; overflow:hidden; min-width:60px; }
+  .kpi-bar { height:100%; border-radius:4px; transition:width 1s ease; }
+  .kpi-pct { font-family:var(--mono); font-size:11px; width:36px; text-align:right; flex-shrink:0; }
+
+  /* ── HEATMAP ── */
+  .heatmap-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:8px; padding:16px; }
+  .heatmap-cell { border-radius:6px; padding:10px 8px; text-align:center; border:1px solid transparent; transition:transform 0.15s, box-shadow 0.15s; cursor:pointer; }
+  .heatmap-cell:hover { transform:scale(1.04); box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+  .heatmap-cell .hm-process { font-size:9px; font-family:var(--mono); color:var(--muted); margin-bottom:4px; text-transform:uppercase; }
+  .heatmap-cell .hm-count   { font-family:var(--mono); font-size:22px; font-weight:700; line-height:1; }
+  .heatmap-cell .hm-label   { font-size:8px; margin-top:3px; opacity:0.7; }
+  .hm-green { background:rgba(46,204,113,0.1);  border-color:rgba(46,204,113,0.2); } .hm-green .hm-count { color:var(--green); }
+  .hm-red   { background:rgba(231,76,60,0.1);   border-color:rgba(231,76,60,0.2);  } .hm-red   .hm-count { color:var(--red);   }
+  .hm-amber { background:rgba(243,156,18,0.1);  border-color:rgba(243,156,18,0.2); } .hm-amber .hm-count { color:var(--amber); }
+  .hm-grey  { background:rgba(90,96,112,0.08);  border-color:var(--border); }         .hm-grey  .hm-count { color:var(--muted); }
+
+  /* ── BOTTOM GRID ── */
+  .bottom-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .scrollable { max-height:280px; overflow-y:auto; }
+  .scrollable::-webkit-scrollbar { width:4px; }
+  .scrollable::-webkit-scrollbar-track { background:var(--bg2); }
+  .scrollable::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  .legend { display:flex; gap:16px; padding:10px 16px; border-top:1px solid var(--border); background:var(--bg3); }
+  .legend-item { display:flex; align-items:center; gap:5px; font-size:10px; color:var(--muted); }
+  .legend-dot { width:6px; height:6px; border-radius:50%; }
+
+  .empty-state { padding:32px; text-align:center; color:var(--muted); font-size:13px; font-family:var(--mono); }
+
+  footer { margin-top:28px; padding-top:16px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+  .footer-note { font-size:10px; color:var(--muted); font-family:var(--mono); }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .stat-card, .panel { animation:fadeUp 0.4s ease both; }
+  .stat-card:nth-child(1){animation-delay:0.05s} .stat-card:nth-child(2){animation-delay:0.1s}
+  .stat-card:nth-child(3){animation-delay:0.15s} .stat-card:nth-child(4){animation-delay:0.2s}
+  .stat-card:nth-child(5){animation-delay:0.25s}
+
+  /* ════════════════════════════════════════
+     RESPONSIVE — TABLET (max 1024px)
+  ════════════════════════════════════════ */
+  @media (max-width: 1024px) {
+    .wrap { padding: 16px; }
+
+    .stat-row {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .stat-card:nth-child(4),
+    .stat-card:nth-child(5) {
+      grid-column: span 1;
+    }
+
+    .main-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .panel.span2 { grid-column: span 2; }
+    .panel.span3 { grid-column: span 2; }
+
+    .bottom-grid { gap: 12px; }
+
+    #live-clock { font-size: 22px; }
+    .brand-name  { font-size: 20px; }
+
+    .config-banner { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .config-inputs { flex-direction: column; width: 100%; }
+    .config-input  { width: 100%; }
+    .config-input.short { width: 100%; }
+    .config-btn    { width: 100%; text-align: center; }
+
+    .heatmap-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 6px; padding: 12px; }
+  }
+
+  /* ════════════════════════════════════════
+     RESPONSIVE — MOBILE (max 640px)
+  ════════════════════════════════════════ */
+  @media (max-width: 640px) {
+    .wrap { padding: 12px; }
+
+    /* Header stacks */
+    header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      padding-bottom: 16px;
+      margin-bottom: 16px;
+    }
+    .header-right { text-align: left; }
+    #live-clock { font-size: 20px; }
+    #live-date  { font-size: 10px; }
+    .brand-name  { font-size: 18px; }
+
+    /* Stats: 2 columns on mobile */
+    .stat-row {
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .stat-card:last-child { grid-column: span 2; }
+    .stat-value { font-size: 28px; }
+    .stat-card  { padding: 14px 14px; }
+
+    /* All panels stack to 1 column */
+    .main-grid {
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .panel.span2,
+    .panel.span3 { grid-column: span 1; }
+
+    .bottom-grid {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    /* Tables: hide less important columns on mobile */
+    .data-table .hide-mobile { display: none; }
+
+    /* Scrollable panels shorter on mobile */
+    .scrollable { max-height: 220px; }
+
+    /* Heatmap: smaller cells */
+    .heatmap-grid {
+      grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+      gap: 5px;
+      padding: 10px;
+    }
+    .heatmap-cell { padding: 8px 6px; }
+    .heatmap-cell .hm-count { font-size: 18px; }
+
+    /* KPI rows tighter */
+    .kpi-row { padding: 8px 12px; gap: 8px; }
+    .kpi-name { width: 65px; font-size: 11px; }
+    .kpi-process { display: none; }
+
+    /* Today items */
+    .today-item { padding: 8px 12px; gap: 8px; }
+    .today-meta { font-size: 9px; }
+
+    /* Panel headers */
+    .panel-header { padding: 10px 14px; }
+    .panel-title  { font-size: 10px; }
+
+    /* Updated bar */
+    .updated-bar { flex-direction: column; align-items: flex-start; gap: 6px; padding: 8px 12px; }
+
+    /* Config banner */
+    .config-banner { padding: 12px; }
+    .config-inputs { flex-direction: column; width: 100%; }
+    .config-input  { width: 100%; font-size: 10px; }
+    .config-input.short { width: 100%; }
+    .config-btn { width: 100%; padding: 10px; text-align: center; }
+
+    /* Footer */
+    footer { flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 16px; }
+
+    /* Legend wraps */
+    .legend { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+
+    /* Table font smaller */
+    .data-table td { font-size: 11px; padding: 7px 10px; }
+    .data-table th { padding: 6px 10px; font-size: 8px; }
+  }
+
+  /* ════════════════════════════════════════
+     RESPONSIVE — SMALL MOBILE (max 380px)
+  ════════════════════════════════════════ */
+  @media (max-width: 380px) {
+    .stat-row { grid-template-columns: 1fr 1fr; }
+    .stat-value { font-size: 24px; }
+    .brand-name { font-size: 16px; }
+    #live-clock { font-size: 17px; }
+  }
+
+  /* ── SHIP COUNTDOWN STRIP ── */
+  .ship-strip { display:flex; gap:10px; margin-bottom:20px; overflow-x:auto; padding-bottom:4px; }
+  .ship-strip::-webkit-scrollbar { height:3px; }
+  .ship-strip::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+  .ship-card {
+    flex-shrink:0; background:var(--bg2); border:1px solid var(--border);
+    border-radius:8px; padding:12px 16px; min-width:160px; cursor:pointer;
+    transition:border-color 0.2s, transform 0.2s; position:relative; overflow:hidden;
+  }
+  .ship-card:hover { border-color:var(--accent); transform:translateY(-2px); }
+  .ship-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+  .ship-card.urgent::before  { background:var(--red); }
+  .ship-card.warning::before { background:var(--amber); }
+  .ship-card.ok::before      { background:var(--green); }
+  .ship-po   { font-family:var(--mono); font-size:9px; color:var(--muted); margin-bottom:3px; }
+  .ship-buyer { font-size:11px; font-weight:600; margin-bottom:6px; }
+  .ship-days { font-family:var(--mono); font-size:22px; font-weight:700; line-height:1; }
+  .ship-card.urgent  .ship-days { color:var(--red); }
+  .ship-card.warning .ship-days { color:var(--amber); }
+  .ship-card.ok      .ship-days { color:var(--green); }
+  .ship-label { font-size:9px; color:var(--muted); margin-top:2px; }
+  .ship-date  { font-family:var(--mono); font-size:9px; color:var(--muted); margin-top:4px; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar { display:flex; gap:8px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+  .filter-label { font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; margin-right:4px; }
+  .filter-select {
+    font-family:var(--mono); font-size:11px; padding:5px 10px;
+    background:var(--bg3); border:1px solid var(--border); border-radius:6px;
+    color:var(--text); cursor:pointer; outline:none; appearance:none;
+    -webkit-appearance:none; padding-right:24px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235A6070'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 8px center;
+  }
+  .filter-select:focus { border-color:var(--accent); }
+  .filter-clear { font-family:var(--mono); font-size:9px; padding:5px 10px; background:transparent; border:1px solid var(--border); border-radius:6px; color:var(--muted); cursor:pointer; }
+  .filter-clear:hover { border-color:var(--red); color:var(--red); }
+
+  /* ── PO DRILL-DOWN MODAL ── */
+  .modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200;
+    display:flex; align-items:center; justify-content:center; padding:16px;
+    opacity:0; pointer-events:none; transition:opacity 0.2s;
+  }
+  .modal-overlay.open { opacity:1; pointer-events:all; }
+  .modal {
+    background:var(--bg2); border:1px solid var(--border); border-radius:12px;
+    width:100%; max-width:860px; max-height:90vh; display:flex; flex-direction:column;
+    transform:translateY(20px); transition:transform 0.2s;
+  }
+  .modal-overlay.open .modal { transform:translateY(0); }
+  .modal-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--border); background:var(--bg3); border-radius:12px 12px 0 0; }
+  .modal-title { font-family:var(--mono); font-size:13px; font-weight:700; }
+  .modal-close { background:none; border:1px solid var(--border); border-radius:6px; color:var(--muted); font-size:16px; cursor:pointer; padding:4px 10px; }
+  .modal-close:hover { border-color:var(--red); color:var(--red); }
+  .modal-meta { display:flex; gap:16px; padding:12px 20px; background:var(--bg3); border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .modal-meta-item { font-size:11px; color:var(--muted); }
+  .modal-meta-item strong { color:var(--text); font-family:var(--mono); }
+  .modal-body { overflow-y:auto; flex:1; }
+  .modal-table { width:100%; border-collapse:collapse; }
+  .modal-table th { padding:8px 14px; font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); font-family:var(--mono); text-align:left; border-bottom:1px solid var(--border); background:var(--bg3); position:sticky; top:0; }
+  .modal-table td { padding:10px 14px; font-size:12px; border-bottom:1px solid rgba(37,42,56,0.4); vertical-align:middle; }
+  .modal-table tr:last-child td { border-bottom:none; }
+  .modal-table tr:hover td { background:rgba(79,142,247,0.03); }
+  .modal-table tr.na-row td { opacity:0.35; }
+  .planned-col { font-family:var(--mono); font-size:10px; }
+  .predicted-col { font-family:var(--mono); font-size:10px; color:var(--amber); }
+  .predicted-col.shifted::before { content:'→ '; }
+  .delta-badge { font-family:var(--mono); font-size:9px; padding:2px 6px; border-radius:4px; background:rgba(231,76,60,0.12); color:var(--red); margin-left:4px; }
+
+  /* PO links in tables */
+  .po-link { color:var(--accent); cursor:pointer; font-family:var(--mono); font-size:11px; text-decoration:underline; text-underline-offset:2px; }
+  .po-link:hover { color:#fff; }
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div class="state-overlay" id="overlay">
+  <div class="spinner" id="spinner"></div>
+  <div class="state-msg" id="overlay-msg">Connecting to Google Sheets...</div>
+  <div class="state-err hidden" id="overlay-err"></div>
+  <button class="retry-btn hidden" id="retry-btn" onclick="fetchAndRender()">↺ RETRY</button>
+</div>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="brand-tag">Production Control System</div>
+      <div class="brand-name">PCS <span>CHAMPO</span></div>
+    </div>
+    <div class="header-right" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">☀</button>
+      <div>
+        <div id="live-clock">--:--:--</div>
+        <div id="live-date">Loading...</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONFIG BANNER -->
+  <div class="config-banner" id="config-banner">
+    <div class="config-text">
+      ⚙️ First-time setup — paste your Google Sheet details below<br>
+      <strong>SHEET_ID</strong> = the long ID from your Google Sheet URL &nbsp;|&nbsp; <strong>API_KEY</strong> = from Google Cloud Console
+    </div>
+    <div class="config-inputs">
+      <input class="config-input" id="input-sheet-id" placeholder="Google Sheet ID  (e.g. 1D6rWBfyDy7u...)" />
+      <input class="config-input short" id="input-api-key" placeholder="API Key (AIza...)" />
+      <button class="config-btn" onclick="saveConfig()">CONNECT →</button>
+    </div>
+  </div>
+
+  <!-- UPDATED BAR -->
+  <div class="updated-bar" id="updated-bar" style="display:none">
+    <span class="updated-text">Last updated: <span id="last-updated">—</span></span>
+    <button class="refresh-btn" id="refresh-btn" onclick="fetchAndRender()">↺ REFRESH</button>
+  </div>
+
+
+  <!-- SHIP DATE COUNTDOWN STRIP -->
+  <div id="ship-strip" class="ship-strip" style="display:none"></div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <span class="filter-label">Filter:</span>
+    <select class="filter-select" id="filter-buyer" onchange="onBuyerChange()">
+      <option value="">All Buyers</option>
+    </select>
+    <select class="filter-select" id="filter-po" onchange="applyFilters()">
+      <option value="">All POs</option>
+    </select>
+    <select class="filter-select" id="filter-owner" onchange="applyFilters()">
+      <option value="">All Owners</option>
+    </select>
+    <select class="filter-select" id="filter-unit" onchange="applyFilters()">
+      <option value="">All Units</option>
+      <option value="PNP">PNP</option>
+      <option value="BDH">BDH</option>
+    </select>
+    <select class="filter-select" id="filter-status" onchange="applyFilters()">
+      <option value="">All Statuses</option>
+      <option value="DELAY">Delayed</option>
+      <option value="COMPLETE">Complete</option>
+      <option value="IN PROGRESS">In Progress</option>
+    </select>
+    <button class="filter-clear" onclick="clearFilters()">✕ Clear</button>
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="stat-row">
+    <div class="stat-card blue"   style="cursor:pointer" onclick="statFilter('')"       title="Show all POs">  <div class="stat-label">Active POs</div>    <div class="stat-value" id="stat-po">--</div>     <div class="stat-sub">in production</div></div>
+    <div class="stat-card green"  style="cursor:pointer" onclick="statFilter('ON TIME')" title="Show on-time processes"><div class="stat-label">On Time</div>        <div class="stat-value" id="stat-ontime">--</div>  <div class="stat-sub">processes on schedule</div></div>
+    <div class="stat-card red"    style="cursor:pointer" onclick="statFilter('DELAY')"   title="Show delayed processes"><div class="stat-label">Delayed</div>        <div class="stat-value" id="stat-delay">--</div>   <div class="stat-sub">processes behind</div></div>
+    <div class="stat-card amber"  style="cursor:pointer" onclick="statFilter('IN PROGRESS')" title="Show in-progress"><div class="stat-label">In Progress</div>    <div class="stat-value" id="stat-progress">--</div><div class="stat-sub">currently running</div></div>
+    <div class="stat-card purple" style="cursor:pointer" onclick="statFilter('')"        title="Overall performance"><div class="stat-label">On-Time Rate</div>   <div class="stat-value" id="stat-rate">--%</div>   <div class="stat-sub">overall performance</div></div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">⚡ Today's Work</span><span class="panel-badge alert" id="today-badge">0 items</span></div>
+      <div class="panel-body scrollable" id="today-list"><div class="empty-state">Loading...</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">🚨 Lagging POs</span><span class="panel-badge alert" id="lag-badge">0 delayed</span></div>
+      <div class="panel-body scrollable">
+        <table class="data-table"><thead><tr><th>PO</th><th class="hide-mobile">Buyer</th><th>Delayed Processes</th><th>Days Over</th></tr></thead>
+        <tbody id="lag-body"><tr><td colspan="4" class="empty-state">Loading...</td></tr></tbody></table>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">📊 Owner KPIs</span><span class="panel-badge" id="kpi-badge">--</span></div>
+      <div class="panel-body scrollable" id="kpi-list"><div class="empty-state">Loading...</div></div>
+    </div>
+    <div class="panel span3">
+      <div class="panel-header">
+        <span class="panel-title">🗂 Process Status Overview</span>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> On Time</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Delayed</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div> In Progress</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--muted)"></div> N/A</div>
+        </div>
+      </div>
+      <div class="heatmap-grid" id="heatmap"></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM GRID -->
+  <div class="bottom-grid">
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">📋 Active Processes</span><span class="panel-badge" id="all-badge">--</span></div>
+      <div class="panel-body scrollable">
+        <table class="data-table"><thead><tr><th>PO</th><th class="hide-mobile">Buyer</th><th>Process</th><th class="hide-mobile">Owner</th><th class="hide-mobile">Planned</th><th class="hide-mobile">Predicted</th><th>Status</th></tr></thead>
+        <tbody id="all-body"></tbody></table>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">📅 Upcoming — Next 7 Days</span><span class="panel-badge ok" id="upcoming-badge">0 due</span></div>
+      <div class="panel-body scrollable">
+        <table class="data-table"><thead><tr><th>Date</th><th class="hide-mobile">PO</th><th class="hide-mobile">Buyer</th><th>Process</th><th class="hide-mobile">Owner</th><th>Status</th></tr></thead>
+        <tbody id="upcoming-body"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SHIPPED SHIPMENTS ── -->
+  <div style="margin-bottom:28px">
+    <div class="panel" style="overflow:visible">
+      <div class="panel-header" style="gap:12px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="panel-title">🚢 Shipped Shipments</span>
+          <span class="panel-badge ok" id="ship-total-badge">0 shipped</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto">
+          <select class="filter-select" id="ship-month-filter" onchange="renderShipments()" style="font-size:10px;padding:4px 24px 4px 8px">
+            <option value="">All Time</option>
+          </select>
+          <div style="display:flex;gap:4px">
+            <button class="panel-badge" id="ship-tab-all"    onclick="setShipTab('all')"     style="cursor:pointer;padding:3px 10px">All</button>
+            <button class="panel-badge ok" id="ship-tab-ontime" onclick="setShipTab('ontime')"  style="cursor:pointer;padding:3px 10px">On Time</button>
+            <button class="panel-badge alert" id="ship-tab-late"   onclick="setShipTab('late')"    style="cursor:pointer;padding:3px 10px">Delayed</button>
+          </div>
+        </div>
+      </div>
+      <div class="scrollable" style="max-height:340px">
+        <table class="data-table">
+          <thead><tr>
+            <th>PO</th>
+            <th class="hide-mobile">Buyer</th>
+            <th>Shipped Date</th>
+            <th class="hide-mobile">Ship Window</th>
+            <th>Result</th>
+            <th>Delayed Processes</th>
+          </tr></thead>
+          <tbody id="ship-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-note">⚡ PCS CHAMPO — Live data from Google Sheets</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span style="font-family:var(--mono);font-size:9px;color:var(--muted)" id="sheet-indicator"></span>
+      <button class="refresh-btn" onclick="clearConfig()">⚙ Reconfigure</button>
+    </div>
+  </footer>
+
+  <!-- PO DRILL-DOWN MODAL -->
+  <div class="modal-overlay" id="po-modal" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="modal-title">PO Detail</span>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-meta" id="modal-meta"></div>
+      <div class="modal-body">
+        <table class="modal-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Process</th><th>Owner</th>
+              <th>Planned</th><th>Predicted</th><th>Actual</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="modal-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <!-- PROCESS DETAIL MODAL (owner query: planned date, delays, revisions, completion) -->
+  <div class="modal-overlay" id="proc-modal" onclick="if(event.target===this)closeProcModal()">
+    <div class="modal" style="max-width:700px">
+      <div class="modal-header">
+        <span class="modal-title" id="proc-modal-title">Process Detail</span>
+        <button class="modal-close" onclick="closeProcModal()">✕</button>
+      </div>
+      <div class="modal-meta" id="proc-modal-meta"></div>
+      <div class="modal-body" id="proc-modal-body" style="padding:16px 20px;display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  CONFIG — stored in localStorage so you only enter once
+// ════════════════════════════════════════════════════════════════
+const CONFIG_KEY = 'pcs_config';
+const SHEET_ID = '1S2ikmWM_GlWbYVuOlPQBbGEebtnO31qNcc8m7-CTaRU';
+const API_KEY  = 'AIzaSyCQ2IAWSR-cwdxqaxvBlfhwBHUiueu8vmo';
+
+function getConfig() {
+  try { return JSON.parse(localStorage.getItem(CONFIG_KEY)) || {}; } catch { return {}; }
+}
+function saveConfig() {
+  const sheetId = document.getElementById('input-sheet-id').value.trim();
+  const apiKey  = document.getElementById('input-api-key').value.trim();
+  if (!sheetId || !apiKey) { alert('Please enter both Sheet ID and API Key'); return; }
+  localStorage.setItem(CONFIG_KEY, JSON.stringify({ sheetId, apiKey }));
+  document.getElementById('config-banner').classList.add('hidden');
+  fetchAndRender();
+}
+function clearConfig() {
+  localStorage.removeItem(CONFIG_KEY);
+  location.reload();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CLOCK
+// ════════════════════════════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  document.getElementById('live-clock').textContent =
+    now.toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('live-date').textContent =
+    now.toLocaleDateString('en-IN', {weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ════════════════════════════════════════════════════════════════
+//  GOOGLE SHEETS FETCH
+//  Reads PROCESS_TIMELINES sheet via Sheets API v4
+// ════════════════════════════════════════════════════════════════
+async function fetchSheetData(sheetId, apiKey) {
+  // Fetch PROCESS_TIMELINES — columns A to Z (all data)
+  const range   = encodeURIComponent("PROCESS_TIMELINES!A:AH");
+  const url     = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
+  const res     = await fetch(url);
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || `HTTP ${res.status}`);
+  }
+  const json    = await res.json();
+  const rows    = json.values || [];
+  if (rows.length < 2) return [];
+
+  const headers = rows[0];
+  const idx     = (name) => headers.findIndex(h => h === name);
+
+  // Column indices
+  const I = {
+    PO:          idx('PO'),
+    BUYER:       idx('Buyer'),
+    SKU:         idx('SKU'),
+    SEQ:         idx('Process_Seq'),
+    PROCESS:     idx('Process_Name'),
+    VARIANT:     idx('Variant'),
+    APPLICABLE:  idx('Applicable'),
+    OWNER:       idx('Owner'),
+    START:       idx('Start_Date'),
+    PLANNED:     idx('Planned_Date'),
+    ACTUAL:      idx('Actual_Date'),
+    DELAY_DAYS:  idx('Delay_Days'),
+    STATUS:      idx('Status'),
+    SHIP_START:  idx('Ship_Start'),
+    SHIP_END:    idx('Ship_End'),
+    REMARKS:     idx('Remarks'),
+    PO_F:        idx('PO_F'),
+    BUYER_F:     idx('Buyer_F'),
+    SKU_F:       idx('SKU_F'),
+    PREDICTED:   idx('Predicted_Date'),
+    PRED_CAUSE:  idx('Predicted_Cause'),
+    OWNER_NOTES: idx('Owner_Notes'),
+    MTG_NOTE:    idx('Meeting_Overall_Note'),
+    PRED_START:  idx('Predicted_Start'),
+  };
+
+  const parseDate = (val) => {
+    if (!val || val === 'ok' || val.includes('No Dates')) return null;
+    // Handle serial number dates from Sheets
+    if (!isNaN(val)) {
+      const d = new Date(1899, 11, 30);
+      d.setDate(d.getDate() + parseInt(val));
+      return d;
+    }
+    const d = new Date(val);
+    return isNaN(d) ? null : d;
+  };
+
+  return rows.slice(1).map(row => ({
+    po:         row[I.PO_F]        || row[I.PO]      || '',
+    buyer:      row[I.BUYER_F]     || row[I.BUYER]   || '',
+    sku:        row[I.SKU_F]       || row[I.SKU]     || '',
+    seq:        parseInt(row[I.SEQ]) || 0,
+    process:    row[I.PROCESS]     || '',
+    variant:    row[I.VARIANT]     || '',
+    applicable: row[I.APPLICABLE]  || 'NO',
+    owner:      row[I.OWNER]       || '',
+    start:      parseDate(row[I.START] !== undefined ? row[I.START] : null),
+    planned:    parseDate(row[I.PLANNED]),
+    predicted:  parseDate(row[I.PREDICTED] !== undefined ? row[I.PREDICTED] : null),
+    predCause:  row[I.PRED_CAUSE]  || '',
+    ownerNotes: row[I.OWNER_NOTES] || '',
+    mtgNote:    row[I.MTG_NOTE]    || '',
+    remarks:    row[I.REMARKS]     || '',
+    predStart:  parseDate(row[I.PRED_START] !== undefined ? row[I.PRED_START] : null),
+    actual:     parseDate(row[I.ACTUAL]),
+    delayDays:  parseInt(row[I.DELAY_DAYS]) || 0,
+    status:     row[I.STATUS]      || '',
+    shipStart:  parseDate(row[I.SHIP_START]),
+    shipEnd:    parseDate(row[I.SHIP_END]),
+  })).filter(r => r.process && r.applicable !== 'NO' && r.applicable !== 'NA');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  MAIN — fetch + render
+// ════════════════════════════════════════════════════════════════
+async function fetchAndRender() {
+  const cfg = getConfig();
+
+  showOverlay('Fetching live data from Google Sheets...');
+  document.getElementById('refresh-btn')?.classList.add('spinning');
+
+  try {
+    const [data, moRows] = await Promise.all([
+      fetchSheetData(SHEET_ID, API_KEY),
+      fetchMasterOrders(SHEET_ID, API_KEY)
+    ]);
+    hideOverlay();
+    buildShippedData(data, moRows);
+    render(data);
+    document.getElementById('updated-bar').style.display = 'flex';
+    document.getElementById('last-updated').textContent =
+      new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    document.getElementById('sheet-indicator').textContent = `Sheet: ${SHEET_ID.slice(0,12)}...`;
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    document.getElementById('refresh-btn')?.classList.remove('spinning');
+  }
+}
+
+function showOverlay(msg) {
+  document.getElementById('overlay').classList.remove('hidden');
+  document.getElementById('spinner').style.display = 'block';
+  document.getElementById('overlay-msg').textContent = msg;
+  document.getElementById('overlay-err').classList.add('hidden');
+  document.getElementById('retry-btn').classList.add('hidden');
+}
+function hideOverlay() {
+  document.getElementById('overlay').classList.add('hidden');
+}
+function showError(msg) {
+  document.getElementById('spinner').style.display = 'none';
+  document.getElementById('overlay-msg').textContent = 'Connection failed';
+  const errEl = document.getElementById('overlay-err');
+  errEl.classList.remove('hidden');
+  errEl.textContent = `Error: ${msg}\n\nMake sure your Sheet is public (Share → Anyone with link → Viewer) and your API key has Sheets API enabled.`;
+  document.getElementById('retry-btn').classList.remove('hidden');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════════════════════════
+const today = new Date(); today.setHours(0,0,0,0);
+const fmt   = (d) => d ? d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) : '—';
+const fmtFull = (d) => d ? d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'}) : '—';
+
+let _allData    = [];   // active (non-shipped) process rows
+let _shippedPOs = {};   // map of PO -> { buyer, shippedDate, buyer, rows[] } for shipped POs
+let _filters = { buyer:'', po:'', owner:'', status:'', unit:'' };
+let _shipFilter = { month:'', status:'' };
+
+function statFilter(status) {
+  // Clicking a stat card filters by that status (or clears if empty)
+  document.getElementById('filter-status').value = status;
+  _filters.status = status;
+  const filtered = _allData.filter(r =>
+    (!_filters.buyer  || r.buyer  === _filters.buyer)  &&
+    (!_filters.po     || r.po     === _filters.po)     &&
+    (!_filters.owner  || r.owner  === _filters.owner)  &&
+    (!_filters.status || r.status === _filters.status) &&
+    (!_filters.unit   || r.variant?.includes(_filters.unit))
+  );
+  renderAll(filtered);
+  // Scroll down to All Active Processes to show filtered results
+  setTimeout(() => {
+    const el = document.getElementById('all-body');
+    if (el) el.closest('.panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+// Fetch MASTER_ORDERS for shipped PO data
+async function fetchMasterOrders(sheetId, apiKey) {
+  try {
+    const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/' +
+      encodeURIComponent('MASTER_ORDERS!A:AH') + '?key=' + apiKey;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const rows = (await res.json()).values || [];
+    if (rows.length < 2) return [];
+    const h = rows[0];
+    const idx = n => h.findIndex(x => x === n);
+    const I = {
+      PO: idx('PO'), BUYER: idx('Buyer'), STATUS: idx('PO_Status'),
+      SHIPPED_DATE: idx('Shipped_Date'), SHIP_END: idx('Ship_End')
+    };
+    const parseDate = val => {
+      if (!val) return null;
+      if (!isNaN(val)) { const d = new Date(1899,11,30); d.setDate(d.getDate()+parseInt(val)); return d; }
+      const d = new Date(val); return isNaN(d) ? null : d;
+    };
+    return rows.slice(1).map(row => ({
+      po:          String(row[I.PO]     || '').trim(),
+      buyer:       String(row[I.BUYER]  || '').trim(),
+      poStatus:    String(row[I.STATUS] || '').trim(),
+      shippedDate: parseDate(row[I.SHIPPED_DATE]),
+      shipEnd:     parseDate(row[I.SHIP_END])
+    })).filter(r => r.po && r.poStatus === 'SHIPPED');
+  } catch(e) { return []; }
+}
+
+// Build _shippedPOs map — keyed by PO, excludes shipped from _allData
+function buildShippedData(ptRows, moRows) {
+  // Build set of shipped POs from MASTER_ORDERS
+  _shippedPOs = {};
+  moRows.forEach(mo => {
+    if (!_shippedPOs[mo.po]) {
+      _shippedPOs[mo.po] = {
+        po: mo.po, buyer: mo.buyer,
+        shippedDate: mo.shippedDate, shipEnd: mo.shipEnd,
+        rows: []
+      };
+    }
+  });
+  // Attach PT rows to each shipped PO
+  ptRows.forEach(r => {
+    if (_shippedPOs[r.po]) _shippedPOs[r.po].rows.push(r);
+  });
+}
+
+function render(data) {
+  // Exclude rows belonging to shipped POs from all active sections
+  const shippedPOSet = new Set(Object.keys(_shippedPOs));
+  const activeData = data.filter(r => !shippedPOSet.has(r.po));
+  _allData = activeData;
+  populateFilterDropdowns(activeData);
+  renderShipStrip(activeData);
+  renderAll(activeData);
+  renderShipments();
+}
+
+function onBuyerChange() {
+  _filters.buyer = document.getElementById('filter-buyer').value;
+  _filters.po    = '';
+  // Repopulate PO dropdown based on selected buyer
+  const pos = [...new Set(_allData
+    .filter(r => !_filters.buyer || r.buyer === _filters.buyer)
+    .map(r => r.po).filter(Boolean))].sort();
+  const poSel = document.getElementById('filter-po');
+  poSel.innerHTML = '<option value="">All POs</option>' + pos.map(p=>`<option value="${p}">${p}</option>`).join('');
+  applyFilters();
+}
+
+function applyFilters() {
+  _filters.buyer  = document.getElementById('filter-buyer').value;
+  _filters.po     = document.getElementById('filter-po').value;
+  _filters.owner  = document.getElementById('filter-owner').value;
+  _filters.status = document.getElementById('filter-status').value;
+  _filters.unit   = document.getElementById('filter-unit').value;
+  const filtered = _allData.filter(r =>
+    (!_filters.buyer  || r.buyer  === _filters.buyer)  &&
+    (!_filters.po     || r.po     === _filters.po)     &&
+    (!_filters.owner  || r.owner  === _filters.owner)  &&
+    (!_filters.status || r.status === _filters.status) &&
+    (!_filters.unit   || r.variant?.includes(_filters.unit) || r.variant?.includes(_filters.unit === 'BDH' ? 'BDH' : 'PNP'))
+  );
+  renderAll(filtered);
+}
+
+function clearFilters() {
+  document.getElementById('filter-buyer').value  = '';
+  document.getElementById('filter-po').value     = '';
+  document.getElementById('filter-owner').value  = '';
+  document.getElementById('filter-status').value = '';
+  document.getElementById('filter-unit').value   = '';
+  _filters = { buyer:'', po:'', owner:'', status:'', unit:'' };
+  populateFilterDropdowns(_allData);
+  renderAll(_allData);
+}
+
+function populateFilterDropdowns(data) {
+  const buyers = [...new Set(data.map(r=>r.buyer).filter(Boolean))].sort();
+  const pos    = [...new Set(data.map(r=>r.po).filter(Boolean))].sort();
+  const owners = [...new Set(data.map(r=>r.owner).filter(Boolean))].sort();
+  const bSel = document.getElementById('filter-buyer');
+  const pSel = document.getElementById('filter-po');
+  const oSel = document.getElementById('filter-owner');
+  const bVal = bSel.value, pVal = pSel.value, oVal = oSel.value;
+  bSel.innerHTML = '<option value="">All Buyers</option>' + buyers.map(b=>`<option value="${b}">${b}</option>`).join('');
+  pSel.innerHTML = '<option value="">All POs</option>'    + pos.map(p=>`<option value="${p}">${p}</option>`).join('');
+  oSel.innerHTML = '<option value="">All Owners</option>' + owners.map(o=>`<option value="${o}">${o}</option>`).join('');
+  bSel.value = bVal; pSel.value = pVal; oSel.value = oVal;
+}
+
+// ── SHIP COUNTDOWN STRIP ──────────────────────────────────────
+function renderShipStrip(data) {
+  const poMap = {};
+  data.forEach(r => {
+    if (!r.po) return;
+    if (!poMap[r.po]) poMap[r.po] = { buyer:r.buyer, shipEnd:null, delayed:false };
+    if (r.shipEnd && (!poMap[r.po].shipEnd || r.shipEnd > poMap[r.po].shipEnd))
+      poMap[r.po].shipEnd = r.shipEnd;
+    if (r.status === 'DELAY') poMap[r.po].delayed = true;
+  });
+  const entries = Object.entries(poMap).filter(([,v])=>v.shipEnd).sort((a,b)=>a[1].shipEnd - b[1].shipEnd);
+  const strip = document.getElementById('ship-strip');
+  if (!entries.length) { strip.style.display='none'; return; }
+  strip.style.display = 'flex';
+  strip.innerHTML = entries.map(([po, info]) => {
+    const days = Math.round((info.shipEnd - today) / 86400000);
+    const cls  = days <= 14 ? 'urgent' : days <= 30 ? 'warning' : 'ok';
+    const label = days < 0 ? 'OVERDUE' : days === 0 ? 'Ships TODAY' : `day${days===1?'':'s'} to ship`;
+    return `<div class="ship-card ${cls}" onclick="openModal('${po}')">
+      <div class="ship-po">${po}${info.delayed?' ⚠':''}</div>
+      <div class="ship-buyer">${info.buyer}</div>
+      <div class="ship-days">${Math.abs(days)}</div>
+      <div class="ship-label">${label}</div>
+      <div class="ship-date">By ${fmtFull(info.shipEnd)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── PO DRILL-DOWN MODAL ───────────────────────────────────────
+function openModal(po) {
+  const rows = _allData.filter(r => r.po === po).sort((a,b) => a.seq - b.seq);
+  if (!rows.length) return;
+  const r0 = rows[0];
+  const delayed = rows.filter(r=>r.status==='DELAY').length;
+
+  // Ship date
+  const shipEnd = rows.reduce((m,r) => r.shipEnd && (!m||r.shipEnd>m) ? r.shipEnd : m, null);
+  const daysLeft = shipEnd ? Math.round((shipEnd - today)/86400000) : null;
+  const shipStr  = shipEnd ? `${fmtFull(shipEnd)} (${daysLeft >= 0 ? daysLeft+'d left' : Math.abs(daysLeft)+'d overdue'})` : '—';
+
+  // Unique SKUs
+  const skus = [...new Set(rows.map(r=>r.sku).filter(Boolean))].join(', ');
+
+  document.getElementById('modal-title').textContent = `PO ${po} — ${r0.buyer}`;
+  // Find overall meeting note (same for all rows in group)
+  const overallNote = rows.find(r=>r.mtgNote)?.mtgNote || '';
+  document.getElementById('modal-meta').innerHTML = `
+    <div class="modal-meta-item">Buyer: <strong>${r0.buyer}</strong></div>
+    <div class="modal-meta-item">SKUs: <strong>${skus||'—'}</strong></div>
+    <div class="modal-meta-item">Ship by: <strong>${shipStr}</strong></div>
+    <div class="modal-meta-item">Delayed: <strong style="color:${delayed?'var(--red)':'var(--green)'}">
+      ${delayed ? delayed+' process'+(delayed>1?'es':'') : '✅ None'}</strong></div>
+    ${overallNote ? `<div class="modal-meta-item" style="width:100%;margin-top:4px;padding-top:8px;border-top:1px solid var(--border)">
+      📋 Meeting Note: <strong style="color:var(--text);font-family:var(--sans)">${overallNote}</strong></div>` : ''}
+  `;
+
+  document.getElementById('modal-body').innerHTML = rows.map(r => {
+    const isNA = r.applicable === 'NO' || r.applicable === 'NA';
+    const hasPred = r.predicted && r.planned && r.predicted.getTime() !== r.planned.getTime();
+    const diffDays = hasPred ? Math.round((r.predicted - r.planned)/86400000) : 0;
+    const hasMtgNote   = r.process && !isNA && r.planned;
+    const hasOwnerNote = r.ownerNotes || r.predCause;
+    const poE = (r.po||'').replace(/'/g,"\\'"); const prE = (r.process||'').replace(/'/g,"\\'"); const owE = (r.owner||'').replace(/'/g,"\\'");
+    return `<tr class="${isNA?'na-row':''}" style="${isNA?'':'cursor:pointer'}" onclick="${isNA?'':'openProcDetail(\'' + poE + '\',\'' + prE + '\',\'' + owE + '\')'}">
+      <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${r.seq}</td>
+      <td style="font-size:12px;font-weight:500">
+        ${r.process}${r.variant && r.variant!=='Fixed'?` <span style="font-size:9px;color:var(--muted)">(${r.variant})</span>`:''}
+        ${r.planned && !isNA ? `<div style="font-size:9px;color:var(--muted);margin-top:2px;font-family:var(--mono)">📅 ${fmt(r.planned)}</div>` : ''}
+        ${r.remarks    ? `<div style="font-size:9px;color:var(--accent);margin-top:2px">📝 ${r.remarks}</div>` : ''}
+        ${r.ownerNotes ? `<div style="font-size:9px;color:var(--amber);margin-top:2px">👤 ${r.ownerNotes}</div>` : ''}
+        ${r.predCause  ? `<div style="font-size:9px;color:var(--muted);margin-top:1px;font-style:italic">↪ ${r.predCause}</div>` : ''}
+      </td>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--accent)">${r.owner||'—'}</td>
+      <td class="planned-col">${fmt(r.planned)}</td>
+      <td class="predicted-col ${hasPred?'shifted':''}">
+        ${hasPred ? fmt(r.predicted) + `<span class="delta-badge">+${diffDays}d</span>` : (isNA?'N/A':'—')}
+      </td>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--green)">${fmt(r.actual)}</td>
+      <td onclick="event.stopPropagation()">${pill(r.status, r, true)}</td>
+    </tr>
+    `;
+  }).join('');
+
+  document.getElementById('po-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+// Open heatmap process detail — shows all rows for that process type
+function openHeatmapDetail(procName) {
+  const rows = _allData.filter(r => r.process === procName)
+    .sort((a,b) => {
+      // Sort: DELAY first, then IN PROGRESS, then pending, then COMPLETE
+      const o = {'DELAY':0,'IN PROGRESS':1,'':2,'ON TIME':3,'COMPLETE':4};
+      return (o[a.status]??2) - (o[b.status]??2);
+    });
+
+  if (!rows.length) return;
+
+  // Aggregate counts
+  const counts = { delayed:0, running:0, onTime:0, pending:0, total:rows.length };
+  rows.forEach(r => {
+    if (r.status === 'DELAY')                                 counts.delayed++;
+    else if (r.status === 'IN PROGRESS')                      counts.running++;
+    else if (r.status === 'ON TIME' || r.status === 'COMPLETE') counts.onTime++;
+    else                                                      counts.pending++;
+  });
+
+  document.getElementById('proc-modal-title').textContent = procName + ' — All POs';
+  document.getElementById('proc-modal-meta').innerHTML =
+    '<div class="modal-meta-item">Process: <strong>' + procName + '</strong></div>' +
+    '<div class="modal-meta-item">Total: <strong>' + counts.total + '</strong></div>' +
+    (counts.delayed ? '<div class="modal-meta-item">Delayed: <strong style="color:var(--red)">' + counts.delayed + '</strong></div>' : '') +
+    (counts.running ? '<div class="modal-meta-item">Running: <strong style="color:var(--amber)">' + counts.running + '</strong></div>' : '') +
+    (counts.onTime  ? '<div class="modal-meta-item">On Time: <strong style="color:var(--green)">' + counts.onTime + '</strong></div>' : '') +
+    (counts.pending ? '<div class="modal-meta-item">Pending: <strong style="color:var(--muted)">' + counts.pending + '</strong></div>' : '');
+
+  document.getElementById('proc-modal-body').innerHTML =
+    '<div style="overflow-y:auto">' +
+    '<table style="width:100%;border-collapse:collapse">' +
+    '<thead><tr>' +
+    ['PO','Buyer','Owner','Planned','Predicted','Actual','Status'].map(h =>
+      '<th style="padding:8px 14px;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-family:var(--mono);text-align:left;border-bottom:1px solid var(--border);background:var(--bg3);position:sticky;top:0">' + h + '</th>'
+    ).join('') +
+    '</tr></thead><tbody>' +
+    rows.map(function(r) {
+      const poe = (r.po||'').replace(/'/g,"\'");
+      const pre = (r.process||'').replace(/'/g,"\'");
+      const owe = (r.owner||'').replace(/'/g,"\'");
+      const hasPred = r.predicted && r.planned && r.predicted.getTime() !== r.planned.getTime();
+      const diffD   = hasPred ? Math.round((r.predicted - r.planned)/86400000) : 0;
+      const acColor = r.actual ? (r.actual > r.planned ? 'var(--red)' : 'var(--green)') : 'var(--muted)';
+      return '<tr style="cursor:pointer;border-bottom:1px solid rgba(37,42,56,0.4)" onclick="closeProcModal();setTimeout(function(){openProcDetail(\'' + poe + '\',\'' + pre + '\',\'' + owe + '\')},60)">' +
+        '<td style="padding:9px 14px;font-family:var(--mono);font-size:11px"><span style="color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="event.stopPropagation();closeProcModal();setTimeout(function(){openModal(\'' + poe + '\')},60)">' + r.po + '</span></td>' +
+        '<td style="padding:9px 14px;font-size:11px">' + r.buyer + '</td>' +
+        '<td style="padding:9px 14px;font-family:var(--mono);font-size:10px;color:var(--accent)">' + (r.owner||'—') + '</td>' +
+        '<td style="padding:9px 14px;font-family:var(--mono);font-size:10px">' + fmt(r.planned) + '</td>' +
+        '<td style="padding:9px 14px;font-family:var(--mono);font-size:10px;color:' + (hasPred?'var(--amber)':'var(--muted)') + '">' + (hasPred ? fmt(r.predicted) + ' <span style="font-size:9px;background:rgba(231,76,60,0.12);color:var(--red);padding:1px 5px;border-radius:3px">+' + diffD + 'd</span>' : '—') + '</td>' +
+        '<td style="padding:9px 14px;font-family:var(--mono);font-size:10px;color:' + acColor + '">' + fmt(r.actual) + '</td>' +
+        '<td style="padding:9px 14px">' + pill(r.status, r, false) + '</td>' +
+        '</tr>';
+    }).join('') +
+    '</tbody></table></div>' +
+    '<div style="padding:8px 14px;font-size:10px;color:var(--muted);font-style:italic">Click any row for process detail · Click PO link to open PO view</div>';
+
+  document.getElementById('proc-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+// Filter whole dashboard by owner
+function filterByOwner(owner) {
+  document.getElementById('filter-owner').value = owner;
+  _filters.owner = owner;
+  const filtered = _allData.filter(r =>
+    (!_filters.buyer  || r.buyer  === _filters.buyer) &&
+    (!_filters.po     || r.po     === _filters.po) &&
+    r.owner === owner &&
+    (!_filters.status || r.status === _filters.status) &&
+    (!_filters.unit   || r.variant?.includes(_filters.unit))
+  );
+  renderAll(filtered);
+  setTimeout(() => document.getElementById('all-body')?.closest('.panel')?.scrollIntoView({behavior:'smooth',block:'start'}), 120);
+}
+
+// Show owner's process list in proc-modal
+function showOwnerList(owner, category) {
+  const catLabels = { ontime:'On Time', late:'Completed Late', atrisk:'At Risk', pending:'Pending' };
+  const rows = _allData.filter(r => {
+    if (r.owner !== owner) return false;
+    if (category === 'ontime')  return (r.status === 'ON TIME' || r.status === 'COMPLETE') && r.actual && r.planned && r.actual <= r.planned;
+    if (category === 'late')    return (r.status === 'ON TIME' || r.status === 'COMPLETE') && r.actual && r.planned && r.actual > r.planned;
+    if (category === 'atrisk')  return !r.actual && r.predicted && r.planned && r.predicted > r.planned;
+    if (category === 'pending') return !r.actual && !(r.predicted && r.planned && r.predicted > r.planned);
+    return false;
+  });
+  document.getElementById('proc-modal-title').textContent = owner + ' — ' + catLabels[category];
+  document.getElementById('proc-modal-meta').innerHTML =
+    '<div class="modal-meta-item">Owner: <strong style="color:var(--accent)">' + owner + '</strong></div>' +
+    '<div class="modal-meta-item">Category: <strong>' + catLabels[category] + '</strong></div>' +
+    '<div class="modal-meta-item">Count: <strong>' + rows.length + '</strong></div>';
+  if (!rows.length) {
+    document.getElementById('proc-modal-body').innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:11px">No processes found</div>';
+  } else {
+    document.getElementById('proc-modal-body').innerHTML =
+      '<div style="overflow-y:auto">' +
+      '<table style="width:100%;border-collapse:collapse">' +
+      '<thead><tr>' +
+      '<th style="padding:8px 14px;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-family:var(--mono);text-align:left;border-bottom:1px solid var(--border);background:var(--bg3)">PO</th>' +
+      '<th style="padding:8px 14px;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-family:var(--mono);text-align:left;border-bottom:1px solid var(--border);background:var(--bg3)">Buyer</th>' +
+      '<th style="padding:8px 14px;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-family:var(--mono);text-align:left;border-bottom:1px solid var(--border);background:var(--bg3)">Process</th>' +
+      '<th style="padding:8px 14px;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-family:var(--mono);text-align:left;border-bottom:1px solid var(--border);background:var(--bg3)">Planned</th>' +
+      '<th style="padding:8px 14px;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-family:var(--mono);text-align:left;border-bottom:1px solid var(--border);background:var(--bg3)">Actual</th>' +
+      '<th style="padding:8px 14px;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-family:var(--mono);text-align:left;border-bottom:1px solid var(--border);background:var(--bg3)">Status</th>' +
+      '</tr></thead><tbody>' +
+      rows.map(function(r) {
+        const poe = (r.po||'').replace(/'/g,"\'");
+        const pre = (r.process||'').replace(/'/g,"\'");
+        const owe = (r.owner||'').replace(/'/g,"\'");
+        const acCol = r.actual ? (r.actual > r.planned ? 'var(--red)' : 'var(--green)') : 'var(--muted)';
+        return '<tr style="cursor:pointer;border-bottom:1px solid rgba(37,42,56,0.4)" onclick="closeProcModal();setTimeout(function(){openProcDetail(\'' + poe + '\',\'' + pre + '\',\'' + owe + '\')},60)">' +
+          '<td style="padding:9px 14px;font-family:var(--mono);font-size:11px;color:var(--accent)">' + r.po + '</td>' +
+          '<td style="padding:9px 14px;font-size:11px">' + r.buyer + '</td>' +
+          '<td style="padding:9px 14px;font-size:11px;font-weight:500">' + r.process + '</td>' +
+          '<td style="padding:9px 14px;font-family:var(--mono);font-size:10px">' + fmt(r.planned) + '</td>' +
+          '<td style="padding:9px 14px;font-family:var(--mono);font-size:10px;color:' + acCol + '">' + fmt(r.actual) + '</td>' +
+          '<td style="padding:9px 14px">' + pill(r.status, r, false) + '</td>' +
+          '</tr>';
+      }).join('') +
+      '</tbody></table></div>' +
+      '<div style="padding:8px 14px;font-size:10px;color:var(--muted);font-style:italic">Click any row to view full process detail</div>';
+  }
+  document.getElementById('proc-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('po-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if(e.key==='Escape') { closeModal(); closeProcModal(); } });
+
+// ── PROCESS DETAIL — for owner queries (planned date, delays, revisions, completion)
+function openProcDetail(po, process, owner) {
+  const rows = _allData.filter(r => r.po === po && r.process === process);
+  if (!rows.length) return;
+  const r = rows[0];
+
+  const hasPred   = r.predicted && r.planned && r.predicted.getTime() !== r.planned.getTime();
+  const delayDays = r.delayDays || 0;
+  const isLate    = r.actual && r.planned && new Date(r.actual) > new Date(r.planned);
+  const daysLate  = isLate ? Math.round((new Date(r.actual) - new Date(r.planned)) / 86400000) : 0;
+  const plannedPast = r.planned && new Date(r.planned) < today && !r.status && !r.actual;
+
+  document.getElementById('proc-modal-title').textContent = `${process} — PO ${po}`;
+  document.getElementById('proc-modal-meta').innerHTML = `
+    <div class="modal-meta-item">PO: <strong>${po}</strong></div>
+    <div class="modal-meta-item">Buyer: <strong>${r.buyer}</strong></div>
+    <div class="modal-meta-item">Owner: <strong style="color:var(--accent)">${owner}</strong></div>
+    <div class="modal-meta-item">Status: <strong>${r.status || '—'}</strong></div>
+  `;
+
+  let html = '';
+
+  // Timeline card
+  html += `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted)">Timeline</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+      <div>
+        <div style="font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Planned Date</div>
+        <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--text)">${fmt(r.planned)}</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px">Original commitment</div>
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Predicted Date</div>
+        <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:${hasPred ? 'var(--amber)' : 'var(--muted)'}">${hasPred ? fmt(r.predicted) : '—'}</div>
+        ${hasPred ? `<div style="font-size:9px;color:var(--amber);margin-top:2px">+${Math.round((r.predicted - r.planned)/86400000)}d shifted</div>` : '<div style="font-size:9px;color:var(--muted);margin-top:2px">No revision</div>'}
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Actual Completion</div>
+        <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:${r.actual ? (isLate ? 'var(--red)' : 'var(--green)') : 'var(--muted)'}">${fmt(r.actual)}</div>
+        ${r.actual ? `<div style="font-size:9px;color:${isLate ? 'var(--red)' : 'var(--green)'};margin-top:2px">${isLate ? daysLate+'d late' : 'On time ✓'}</div>` : '<div style="font-size:9px;color:var(--muted);margin-top:2px">Not done</div>'}
+      </div>
+    </div>
+  </div>`;
+
+  // Delay info card
+  if (delayDays > 0 || r.predCause) {
+    html += `<div style="background:rgba(231,76,60,0.06);border:1px solid rgba(231,76,60,0.2);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:8px">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--red)">Delay Info</div>
+      ${delayDays > 0 ? `<div style="font-size:12px"><span style="color:var(--muted)">Delay days recorded:</span> <strong style="color:var(--red)">${delayDays}d</strong></div>` : ''}
+      ${r.predCause  ? `<div style="font-size:12px"><span style="color:var(--muted)">Cause:</span> <strong>${r.predCause}</strong></div>` : ''}
+    </div>`;
+  }
+
+  // Owner notes / last update
+  if (r.ownerNotes) {
+    html += `<div style="background:rgba(243,156,18,0.06);border:1px solid rgba(243,156,18,0.2);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:6px">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber)">Owner's Last Update</div>
+      <div style="font-size:12px;line-height:1.5">${r.ownerNotes}</div>
+    </div>`;
+  }
+
+  // Meeting notes
+  if (r.remarks) {
+    html += `<div style="background:rgba(79,142,247,0.06);border:1px solid rgba(79,142,247,0.2);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:6px">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent)">Meeting Note</div>
+      <div style="font-size:12px;line-height:1.5">${r.remarks}</div>
+    </div>`;
+  }
+
+  // No owner update nudge
+  if (plannedPast) {
+    html += `<div style="background:rgba(243,156,18,0.08);border:1px solid rgba(243,156,18,0.3);border-radius:8px;padding:12px 16px;font-size:12px;color:var(--amber)">
+      ⚠️ <strong>Planned date has passed with no update from ${owner}.</strong> The owner has not submitted their form. This is the owner's responsibility — follow up with them directly.
+    </div>`;
+  }
+
+  document.getElementById('proc-modal-body').innerHTML = html;
+  document.getElementById('proc-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeProcModal() {
+  document.getElementById('proc-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ── MAIN RENDER ───────────────────────────────────────────────
+function renderAll(data) {
+  // ── Stats
+  const activePOs  = [...new Set(data.map(r => r.po).filter(Boolean))].length;
+  const onTime     = data.filter(r => r.status === 'ON TIME').length;
+  const delayed    = data.filter(r => r.status === 'DELAY').length;
+  const inProgress = data.filter(r => r.status === 'IN PROGRESS').length;
+  const completed  = onTime + delayed;
+  const rate       = completed > 0 ? Math.round(onTime / completed * 100) : 0;
+
+  document.getElementById('stat-po').textContent       = activePOs;
+  document.getElementById('stat-ontime').textContent   = onTime;
+  document.getElementById('stat-delay').textContent    = delayed;
+  document.getElementById('stat-progress').textContent = inProgress;
+  document.getElementById('stat-rate').textContent     = rate + '%';
+  document.getElementById('stat-rate').style.color     =
+    rate >= 80 ? 'var(--green)' : rate >= 60 ? 'var(--amber)' : 'var(--red)';
+
+  // ── Today's work
+  const todayItems = data.filter(r => {
+    if (!r.planned) return r.status === 'DELAY';
+    const pd = new Date(r.planned); pd.setHours(0,0,0,0);
+    return pd.getTime() === today.getTime() || r.status === 'DELAY';
+  });
+  document.getElementById('today-badge').textContent = todayItems.length + ' items';
+  document.getElementById('today-list').innerHTML = todayItems.length === 0
+    ? '<div class="empty-state">✨ Nothing due today</div>'
+    : todayItems.map(r => {
+        const dotColor = r.status==='DELAY' ? 'var(--red)' : r.status==='IN PROGRESS' ? 'var(--amber)' : 'var(--green)';
+        return `<div class="today-item">
+          <div class="today-dot" style="background:${dotColor}"></div>
+          <div class="today-info">
+            <div class="today-process">${r.process} <span style="color:var(--muted);font-size:10px">— ${r.variant}</span></div>
+            <div class="today-meta">PO ${r.po} | ${r.buyer} | ${r.sku}</div>
+          </div>
+          <span class="today-owner">${r.owner}</span>
+          ${pill(r.status, r, true)}
+        </div>`;
+      }).join('');
+
+  // ── Lagging POs
+  const lagMap = {};
+  data.filter(r => r.status === 'DELAY').forEach(r => {
+    if (!lagMap[r.po]) lagMap[r.po] = { buyer:r.buyer, processes:[], maxDays:0 };
+    lagMap[r.po].processes.push(r.process);
+    if (r.planned) {
+      const pd = new Date(r.planned); pd.setHours(0,0,0,0);
+      const days = Math.floor((today - pd) / 86400000);
+      if (days > lagMap[r.po].maxDays) lagMap[r.po].maxDays = days;
+    }
+  });
+  document.getElementById('lag-badge').textContent = Object.keys(lagMap).length + ' delayed';
+  document.getElementById('lag-body').innerHTML = Object.keys(lagMap).length === 0
+    ? '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--muted);font-family:var(--mono);font-size:11px">✅ No lagging POs</td></tr>'
+    : Object.entries(lagMap).map(([po, info]) => `
+        <tr style="cursor:pointer" onclick="openModal('${po}')">
+          <td><span class="po-link">${po}</span></td>
+          <td class="hide-mobile">${info.buyer}</td>
+          <td style="font-size:10px;color:var(--muted)">${[...new Set(info.processes)].join(', ')}</td>
+          <td style="font-family:var(--mono);color:var(--red)">${info.maxDays > 0 ? info.maxDays+'d' : 'Today'}</td>
+        </tr>`).join('');
+
+  // ── KPI bars — FAIR scoring using processing time, not calendar date
+  // For each process:
+  //   Allocated time  = Planned_End - Planned_Start  (what was agreed in meeting)
+  //   Actual time     = Actual_Date - Predicted_Start (when they actually got material → when done)
+  //   If no Predicted_Start (first process or no upstream delay) → compare Actual vs Planned directly
+  //   At Risk         = not done, Predicted_Date > Planned_Date (upstream threatening deadline)
+  const ownerMap = {};
+  data.forEach(r => {
+    if (!r.owner || r.owner === '3rd Party') return;
+    if (!ownerMap[r.owner]) ownerMap[r.owner] = { onTime:0, late:0, atRisk:0, pending:0 };
+    const o = ownerMap[r.owner];
+
+    if (r.actual) {
+      // Process is complete — score them
+      const actualDay = new Date(r.actual); actualDay.setHours(0,0,0,0);
+
+      if (r.predStart && r.planned && r.start) {
+        // Fair scoring: compare processing time taken vs allocated
+        const allocatedDays = Math.round((new Date(r.planned) - new Date(r.start)) / 86400000);
+        const actualDays    = Math.round((actualDay - new Date(r.predStart)) / 86400000);
+        if (actualDays <= allocatedDays) o.onTime++;
+        else                             o.late++;
+      } else if (r.planned) {
+        // No upstream delay recorded — score against planned date directly
+        const plannedDay = new Date(r.planned); plannedDay.setHours(0,0,0,0);
+        if (actualDay <= plannedDay) o.onTime++;
+        else                         o.late++;
+      }
+    } else if (!r.actual && r.predicted && r.planned) {
+      // Not done yet — is upstream delay threatening their deadline?
+      const predDay = new Date(r.predicted); predDay.setHours(0,0,0,0);
+      const planDay = new Date(r.planned);   planDay.setHours(0,0,0,0);
+      if (predDay > planDay) o.atRisk++;
+      else                   o.pending++;
+    } else {
+      o.pending++;
+    }
+  });
+  document.getElementById('kpi-badge').textContent = Object.keys(ownerMap).length + ' owners';
+  document.getElementById('kpi-list').innerHTML = Object.entries(ownerMap)
+    .sort((a,b) => {
+      const total = s => s.onTime + s.late;
+      const rate  = s => total(s) > 0 ? s.onTime / total(s) : -1;
+      return rate(b[1]) - rate(a[1]);
+    })
+    .map(([owner, s]) => {
+      const scored = s.onTime + s.late;
+      const pct    = scored > 0 ? Math.round(s.onTime / scored * 100) : null;
+      const barColor = pct === null ? 'var(--muted)' : pct >= 80 ? 'var(--green)' : pct >= 60 ? 'var(--amber)' : 'var(--red)';
+      const oe = owner.replace(/'/g,"\\'");
+      return `<div class="kpi-row" style="cursor:pointer" onclick="filterByOwner('${oe}')" title="Click to filter by ${owner}">
+        <span class="kpi-name">${owner}</span>
+        <div class="kpi-chips">
+          ${s.onTime  ? `<span class="kpi-chip done"    style="cursor:pointer" onclick="event.stopPropagation();showOwnerList('${oe}','ontime')"   title="On-time processes">${s.onTime} on time</span>`    : ''}
+          ${s.late    ? `<span class="kpi-chip late"    style="cursor:pointer" onclick="event.stopPropagation();showOwnerList('${oe}','late')"     title="Late processes">${s.late} late</span>`           : ''}
+          ${s.atRisk  ? `<span class="kpi-chip risk"    style="cursor:pointer" onclick="event.stopPropagation();showOwnerList('${oe}','atrisk')"   title="At risk processes">${s.atRisk} at risk</span>`   : ''}
+          ${s.pending ? `<span class="kpi-chip pending" style="cursor:pointer" onclick="event.stopPropagation();showOwnerList('${oe}','pending')"  title="Pending processes">${s.pending} pending</span>`  : ''}
+        </div>
+        <div class="kpi-bar-wrap"><div class="kpi-bar" style="width:${pct||0}%;background:${barColor}"></div></div>
+        <span class="kpi-pct" style="color:${barColor}">${pct !== null ? pct+'%' : '—'}</span>
+      </div>`;
+    }).join('');
+
+  // ── Process heatmap — ordered by seq, includes all 20 processes
+  const PROC_ORDER = [
+    'Yarn','Dyeing','Fabric','Canvas Requirement','Canvas Source','Piping','Trims',
+    'Weaving','Wash','Tufting','Knitting','Embroidery Yarn','Embroidery',
+    'Printing','Foam Backing','Stitching','Testing','Pack & Trims','Final Packing','Final Inspection'
+  ];
+  const procMap = {};
+  // Init all known processes
+  PROC_ORDER.forEach(p => procMap[p] = { onTime:0, delay:0, progress:0, pending:0 });
+  data.forEach(r => {
+    const key = r.process;
+    if (!procMap[key]) procMap[key] = { onTime:0, delay:0, progress:0, pending:0 };
+    if (r.status === 'ON TIME' || r.status === 'COMPLETE') procMap[key].onTime++;
+    else if (r.status === 'DELAY')       procMap[key].delay++;
+    else if (r.status === 'IN PROGRESS') procMap[key].progress++;
+    else                                 procMap[key].pending++;
+  });
+  // Only show processes that appear in current data + always show all 20
+  const heatEntries = PROC_ORDER.map(p => [p, procMap[p] || { onTime:0, delay:0, progress:0, pending:0 }]);
+  // Add any extra processes not in the list
+  Object.keys(procMap).forEach(p => { if (!PROC_ORDER.includes(p)) heatEntries.push([p, procMap[p]]); });
+
+  document.getElementById('heatmap').innerHTML = heatEntries.map(([proc, c]) => {
+    let cls='hm-grey', val=0, label='idle';
+    if (c.delay > 0)       { cls='hm-red';   val=c.delay;    label='delayed'; }
+    else if (c.progress>0) { cls='hm-amber'; val=c.progress; label='running'; }
+    else if (c.onTime > 0) { cls='hm-green'; val=c.onTime;   label='on time'; }
+    else if (c.pending > 0){ cls='hm-grey';  val=c.pending;  label='pending'; }
+    const total = c.delay + c.progress + c.onTime + c.pending;
+    const procE = proc.replace(/'/g,"\'");
+    return `<div class="heatmap-cell ${cls}" onclick="openHeatmapDetail('${procE}')" title="Click to see all ${proc} processes">
+      <div class="hm-process">${proc}</div>
+      <div class="hm-count">${val||0}</div>
+      <div class="hm-label">${label}${total > 0 ? ' · ' + total + ' total' : ''}</div>
+    </div>`;
+  }).join('');
+
+  // ── All active — show ALL applicable processes (not just those with status)
+  // Processes from meeting form have blank status until owner fills form
+  const active = data.filter(r => r.applicable !== 'NO' && r.applicable !== 'NA');
+  document.getElementById('all-badge').textContent = active.length + ' processes';
+  document.getElementById('all-body').innerHTML = active.length === 0
+    ? '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted);font-family:var(--mono);font-size:11px">No processes found — run meeting form to create groups</td></tr>'
+    : active
+    .sort((a,b) => {
+      // Sort: DELAY first, then blank (no owner update yet), then rest
+      const order = { 'DELAY': 0, '': 1, 'IN PROGRESS': 2, 'ON TIME': 3, 'COMPLETE': 4 };
+      return (order[a.status] ?? 1) - (order[b.status] ?? 1);
+    })
+    .map(r => {
+      const hasPred = r.predicted && r.planned && r.predicted.getTime() !== r.planned.getTime();
+      const diffD   = hasPred ? Math.round((r.predicted - r.planned)/86400000) : 0;
+      // Nudge: planned date passed but no status — owner hasn't filled form
+      const plannedPast = r.planned && new Date(r.planned) < today && !r.status && !r.actual;
+      const statusCell = plannedPast
+        ? `<span class="pill pill-progress" style="cursor:pointer" onclick="event.stopPropagation();openProcDetail('${r.po.replace(/'/g,"\\'")}','${r.process.replace(/'/g,"\\'")}','${r.owner.replace(/'/g,"\\'")}')">⚠ No Update</span>`
+        : pill(r.status, r, true);
+      return `<tr style="cursor:pointer" onclick="openProcDetail('${r.po.replace(/'/g,"\\'")}','${r.process.replace(/'/g,"\\'")}','${r.owner.replace(/'/g,"\\'")}')">
+        <td><span class="po-link" onclick="event.stopPropagation();openModal('${r.po}')">${r.po}</span></td>
+        <td class="hide-mobile">${r.buyer}</td>
+        <td style="font-size:11px">${r.process}${r.variant && r.variant!=='Fixed'?`<span style="font-size:9px;color:var(--muted);margin-left:4px">(${r.variant})</span>`:''}</td>
+        <td class="hide-mobile" style="font-size:11px;color:var(--muted)">${r.owner}</td>
+        <td class="hide-mobile" style="font-family:var(--mono);font-size:10px">${fmt(r.planned)}</td>
+        <td class="hide-mobile" style="font-family:var(--mono);font-size:10px;color:${hasPred?'var(--amber)':'var(--muted)'}">
+          ${hasPred ? fmt(r.predicted)+'<span class="delta-badge">+'+diffD+'d</span>' : '—'}
+        </td>
+        <td>${statusCell}</td>
+      </tr>`;
+    }).join('');
+
+  // ── Upcoming 7 days
+  const next7 = data.filter(r => {
+    if (!r.planned) return false;
+    const pd = new Date(r.planned); pd.setHours(0,0,0,0);
+    const diff = (pd - today) / 86400000;
+    return diff >= 0 && diff <= 7;
+  }).sort((a,b) => new Date(a.planned) - new Date(b.planned));
+  document.getElementById('upcoming-badge').textContent = next7.length + ' due';
+  document.getElementById('upcoming-body').innerHTML = next7.map(r => `<tr>
+    <td style="font-family:var(--mono);font-size:10px;color:var(--accent)">${fmt(r.planned)}</td>
+    <td class="hide-mobile"><span class="po-link" onclick="openModal('${r.po}')">${r.po}</span></td>
+    <td class="hide-mobile" style="font-size:11px;color:var(--muted)">${r.buyer}</td>
+    <td style="font-size:11px">${r.process}</td>
+    <td class="hide-mobile" style="font-size:11px;color:var(--muted)">${r.owner}</td>
+    <td>${pill(r.status, r, true)}</td>
+  </tr>`).join('');
+}
+
+// ── Shipped Shipments Panel ───────────────────────────────────────────────────
+let _shipTab = 'all';
+
+function setShipTab(tab) {
+  _shipTab = tab;
+  ['all','ontime','late'].forEach(t => {
+    const el = document.getElementById('ship-tab-' + t);
+    if (!el) return;
+    el.style.fontWeight = t === tab ? '700' : '';
+    el.style.borderColor = t === tab ? 'var(--accent)' : '';
+    el.style.color = t === tab ? 'var(--accent)' : '';
+  });
+  renderShipments();
+}
+
+function renderShipments() {
+  const entries = Object.values(_shippedPOs);
+  if (!entries.length) {
+    document.getElementById('ship-tbody').innerHTML =
+      '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-family:var(--mono);font-size:11px">No shipped POs yet</td></tr>';
+    document.getElementById('ship-total-badge').textContent = '0 shipped';
+    populateMonthFilter(entries);
+    return;
+  }
+
+  // Populate month dropdown
+  populateMonthFilter(entries);
+
+  // Apply month filter
+  const selMonth = document.getElementById('ship-month-filter').value;
+  let filtered = entries;
+  if (selMonth) {
+    filtered = entries.filter(e => {
+      const d = e.shippedDate || e.shipEnd;
+      if (!d) return false;
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') === selMonth;
+    });
+  }
+
+  // Determine on-time vs delayed per PO
+  filtered = filtered.map(e => {
+    const d = e.shippedDate || e.shipEnd;
+    const isLate = d && e.shipEnd && d > e.shipEnd;
+    // Find processes that were delayed in this PO
+    const delayedProcs = e.rows.filter(r => r.status === 'DELAY' || (r.actual && r.planned && r.actual > r.planned));
+    return Object.assign({}, e, { isLate, delayedProcs, shippedOn: d });
+  });
+
+  // Apply tab filter
+  if (_shipTab === 'ontime') filtered = filtered.filter(e => !e.isLate);
+  if (_shipTab === 'late')   filtered = filtered.filter(e => e.isLate);
+
+  document.getElementById('ship-total-badge').textContent = Object.keys(_shippedPOs).length + ' shipped';
+
+  if (!filtered.length) {
+    document.getElementById('ship-tbody').innerHTML =
+      '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted);font-family:var(--mono);font-size:11px">No shipments match this filter</td></tr>';
+    return;
+  }
+
+  // Sort by shipped date desc
+  filtered.sort((a,b) => (b.shippedOn||0) - (a.shippedOn||0));
+
+  document.getElementById('ship-tbody').innerHTML = filtered.map(e => {
+    const poe = (e.po||'').replace(/'/g,"\'");
+    const resultPill = e.isLate
+      ? '<span class="pill pill-delay">DELAYED</span>'
+      : '<span class="pill pill-on-time">ON TIME</span>';
+    const delayCount = e.delayedProcs.length;
+    const delayCell = delayCount
+      ? '<span style="color:var(--red);font-size:11px;cursor:pointer" onclick="openShippedDetail(\'' + poe + '\')">' + delayCount + ' process' + (delayCount>1?'es':'') + ' delayed — click</span>'
+      : '<span style="color:var(--muted);font-size:11px">None</span>';
+    return '<tr style="cursor:pointer" onclick="openShippedDetail(\'' + poe + '\')">' +
+      '<td><span class="po-link">' + e.po + '</span></td>' +
+      '<td class="hide-mobile" style="font-size:11px">' + e.buyer + '</td>' +
+      '<td style="font-family:var(--mono);font-size:10px">' + fmt(e.shippedOn) + '</td>' +
+      '<td class="hide-mobile" style="font-family:var(--mono);font-size:10px;color:var(--muted)">' + (e.shipEnd ? fmt(e.shipEnd) : '—') + '</td>' +
+      '<td>' + resultPill + '</td>' +
+      '<td>' + delayCell + '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function populateMonthFilter(entries) {
+  const sel = document.getElementById('ship-month-filter');
+  const cur = sel.value;
+  const months = new Set();
+  entries.forEach(e => {
+    const d = e.shippedDate || e.shipEnd;
+    if (d) months.add(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'));
+  });
+  const sorted = [...months].sort().reverse();
+  sel.innerHTML = '<option value="">All Time</option>' +
+    sorted.map(m => {
+      const [yr, mo] = m.split('-');
+      const label = new Date(yr, mo-1, 1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+      return '<option value="' + m + '"' + (m===cur?' selected':'') + '>' + label + '</option>';
+    }).join('');
+}
+
+// Open shipped PO detail — shows all processes, highlights delayed ones
+function openShippedDetail(po) {
+  const e = _shippedPOs[po];
+  if (!e) return;
+
+  const rows = (e.rows || []).filter(r => r.applicable !== 'NO' && r.applicable !== 'NA' && r.seq !== 21)
+    .sort((a,b) => a.seq - b.seq);
+
+  const isLate = e.shippedDate && e.shipEnd && e.shippedDate > e.shipEnd;
+  const daysLate = isLate ? Math.round((e.shippedDate - e.shipEnd)/86400000) : 0;
+  const delayedRows = rows.filter(r => r.status === 'DELAY' || (r.actual && r.planned && r.actual > r.planned));
+
+  document.getElementById('proc-modal-title').textContent = 'PO ' + po + ' — Shipped';
+  document.getElementById('proc-modal-meta').innerHTML =
+    '<div class="modal-meta-item">PO: <strong>' + po + '</strong></div>' +
+    '<div class="modal-meta-item">Buyer: <strong>' + e.buyer + '</strong></div>' +
+    '<div class="modal-meta-item">Shipped: <strong style="color:var(--green)">' + fmt(e.shippedDate) + '</strong></div>' +
+    '<div class="modal-meta-item">Ship Window: <strong>' + fmt(e.shipEnd) + '</strong></div>' +
+    '<div class="modal-meta-item">' + (isLate
+      ? '<strong style="color:var(--red)">⚠ ' + daysLate + 'd late</strong>'
+      : '<strong style="color:var(--green)">✓ On time</strong>') + '</div>';
+
+  let html = '';
+
+  // Summary of delayed processes if any
+  if (delayedRows.length) {
+    html += '<div style="background:rgba(231,76,60,0.07);border:1px solid rgba(231,76,60,0.2);border-radius:8px;padding:12px 14px">' +
+      '<div style="font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--red);margin-bottom:8px">Processes that caused delays (' + delayedRows.length + ')</div>' +
+      delayedRows.map(r => {
+        const poe = (r.po||'').replace(/'/g,"\'");
+        const pre = (r.process||'').replace(/'/g,"\'");
+        const owe = (r.owner||'').replace(/'/g,"\'");
+        const late = r.actual && r.planned ? Math.round((r.actual-r.planned)/86400000) : r.delayDays || 0;
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(231,76,60,0.1);cursor:pointer" onclick="closeProcModal();setTimeout(function(){openProcDetail(\'' + poe + '\',\'' + pre + '\',\'' + owe + '\')},60)">' +
+          '<span style="font-size:12px;font-weight:500">' + r.process + '</span>' +
+          '<span style="display:flex;gap:8px;align-items:center">' +
+            '<span style="font-family:var(--mono);font-size:10px;color:var(--muted)">' + (r.owner||'—') + '</span>' +
+            (late > 0 ? '<span style="font-family:var(--mono);font-size:9px;background:rgba(231,76,60,0.12);color:var(--red);padding:2px 6px;border-radius:3px">+' + late + 'd</span>' : '') +
+          '</span>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+  }
+
+  // Full process table
+  html += '<div style="overflow-y:auto">' +
+    '<table style="width:100%;border-collapse:collapse">' +
+    '<thead><tr>' +
+    ['#','Process','Owner','Planned','Actual','Status'].map(h =>
+      '<th style="padding:8px 14px;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-family:var(--mono);text-align:left;border-bottom:1px solid var(--border);background:var(--bg3);position:sticky;top:0">' + h + '</th>'
+    ).join('') +
+    '</tr></thead><tbody>' +
+    rows.map(r => {
+      const poe = (r.po||'').replace(/'/g,"\'");
+      const pre = (r.process||'').replace(/'/g,"\'");
+      const owe = (r.owner||'').replace(/'/g,"\'");
+      const rowLate = r.actual && r.planned && r.actual > r.planned;
+      const rowBg = rowLate ? 'background:rgba(231,76,60,0.04)' : '';
+      return '<tr style="cursor:pointer;border-bottom:1px solid rgba(37,42,56,0.4);' + rowBg + '" onclick="closeProcModal();setTimeout(function(){openProcDetail(\'' + poe + '\',\'' + pre + '\',\'' + owe + '\')},60)">' +
+        '<td style="padding:8px 14px;font-family:var(--mono);font-size:10px;color:var(--muted)">' + r.seq + '</td>' +
+        '<td style="padding:8px 14px;font-size:12px;font-weight:500">' + r.process + (r.variant&&r.variant!=='Fixed'?'<span style="font-size:9px;color:var(--muted);margin-left:4px">('+r.variant+')</span>':'') + '</td>' +
+        '<td style="padding:8px 14px;font-family:var(--mono);font-size:10px;color:var(--accent)">' + (r.owner||'—') + '</td>' +
+        '<td style="padding:8px 14px;font-family:var(--mono);font-size:10px">' + fmt(r.planned) + '</td>' +
+        '<td style="padding:8px 14px;font-family:var(--mono);font-size:10px;color:' + (r.actual?(rowLate?'var(--red)':'var(--green)'):'var(--muted)') + '">' + fmt(r.actual) + '</td>' +
+        '<td style="padding:8px 14px">' + pill(r.status, r, false) + '</td>' +
+        '</tr>';
+    }).join('') +
+    '</tbody></table></div>' +
+    '<div style="padding:8px 14px;font-size:10px;color:var(--muted);font-style:italic">Click any process row for full detail</div>';
+
+  document.getElementById('proc-modal-body').innerHTML = html;
+  document.getElementById('proc-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function pill(status, r, clickable) {
+  if (!status) return '<span class="pill pill-na">—</span>';
+  let cls, label;
+  if (status === 'COMPLETE' || status === 'ON TIME') {
+    const isLate = r && r.actual && r.planned && r.actual > r.planned;
+    cls   = isLate ? 'pill-delay' : 'pill-on-time';
+    label = isLate ? 'COMPLETED LATE' : status;
+  } else if (status === 'DELAY') {
+    cls = 'pill-delay'; label = 'DELAY';
+  } else if (status === 'IN PROGRESS') {
+    cls = 'pill-progress'; label = 'IN PROGRESS';
+  } else {
+    cls = 'pill-na'; label = status;
+  }
+  if (clickable && r) {
+    const po = (r.po||'').replace(/'/g,"\\'");
+    const pr = (r.process||'').replace(/'/g,"\\'");
+    const ow = (r.owner||'').replace(/'/g,"\\'");
+    return '<span class="pill ' + cls + '" style="cursor:pointer" onclick="event.stopPropagation();openProcDetail(\'' + po + '\',\'' + pr + '\',\'' + ow + '\')">' + label + '</span>';
+  }
+  return '<span class="pill ' + cls + '">' + label + '</span>';
+}
+
+// ════════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════════
+(function init() {
+  const cfg = getConfig();
+  if (!SHEET_ID || !API_KEY) {
+    // Show config banner, hide overlay
+    document.getElementById('config-banner').classList.remove('hidden');
+    hideOverlay();
+  } else {
+    document.getElementById('config-banner').classList.add('hidden');
+    function toggleTheme() {
+  var isLight = document.body.classList.toggle('light');
+  localStorage.setItem('pcs_theme', isLight ? 'light' : 'dark');
+  document.getElementById('theme-btn').textContent = isLight ? '🌙' : '☀';
+}
+(function(){ if(localStorage.getItem('pcs_theme')==='light'){ document.body.classList.add('light'); var b=document.getElementById('theme-btn'); if(b) b.textContent='🌙'; }})();
+fetchAndRender();
+    // Auto-refresh every 5 minutes
+    setInterval(fetchAndRender, 5 * 60 * 1000);
+  }
+})();
+</script>
+</body>
+</html>
