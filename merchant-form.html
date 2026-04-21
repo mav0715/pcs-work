@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Merchant Portal - PCS CHAMPO</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0A0C10;--bg2:#111318;--bg3:#181C24;--bg4:#1E2330;--border:#232836;--border2:#2E3547;--text:#ECF0F8;--muted:#4E5A72;--muted2:#6B7A96;--accent:#5B8FF9;--green:#27D98A;--red:#F05C5C;--amber:#F5A623;--mono:"Space Mono",monospace;--sans:"DM Sans",sans-serif;--r:12px}
+body.light{--bg:#F4F5F7;--bg2:#FFFFFF;--bg3:#ECEEF2;--bg4:#E2E5EB;--border:#D8DCE6;--border2:#C4CAD8;--text:#1A1E2A;--muted:#8A92A6;--muted2:#6B748A}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+.hidden{display:none!important}
+.tbtn{font-family:var(--mono);font-size:11px;padding:5px 9px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;position:fixed;top:8px;left:8px;z-index:600}
+.pin-screen{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:16px}
+.pin-screen.gone{display:none}
+.pin-badge{font-family:var(--mono);font-size:9px;letter-spacing:0.25em;color:var(--accent);text-transform:uppercase;padding:5px 14px;border:1px solid rgba(91,143,249,0.3);border-radius:20px;background:rgba(91,143,249,0.06)}
+.pin-logo{font-family:var(--mono);font-size:26px;font-weight:700}
+.pin-logo b{color:var(--accent)}
+.pin-sub{font-size:14px;color:var(--muted2);text-align:center;max-width:280px;line-height:1.6}
+.pin-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px 22px;width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:20px}
+.pin-dots{display:flex;gap:12px}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border2);background:transparent;transition:all 0.2s}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent)}
+.pin-dot.error{background:var(--red);border-color:var(--red)}
+.pkpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+.pk{padding:16px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;text-align:center;cursor:pointer;font-size:20px;font-weight:600;color:var(--text);transition:all 0.15s;user-select:none}
+.pk:active{background:var(--bg4);transform:scale(0.94)}
+.pk.del{font-size:16px;color:var(--muted2)}
+.pk.z{grid-column:2}
+.pin-err{font-size:12px;color:var(--red);font-family:var(--mono);min-height:16px;text-align:center}
+.hdr{position:sticky;top:0;z-index:50;background:rgba(10,12,16,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:11px 16px;display:flex;align-items:center;justify-content:space-between}
+body.light .hdr{background:rgba(244,245,247,0.94)}
+.hdr-tag{font-family:var(--mono);font-size:8px;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase}
+.hdr-title{font-family:var(--mono);font-size:14px;font-weight:700}
+.hdr-title b{color:var(--accent)}
+.mpill{display:flex;align-items:center;gap:6px;background:rgba(39,217,138,0.08);border:1px solid rgba(39,217,138,0.2);border-radius:20px;padding:5px 10px;font-size:11px;color:var(--green);cursor:pointer;white-space:nowrap}
+.mpill.gone{display:none}
+.wrap{max-width:480px;margin:0 auto;padding:14px 14px 110px;display:flex;flex-direction:column;gap:10px}
+.steps{display:flex;align-items:center}
+.si{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.sd{width:26px;height:26px;border-radius:50%;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;color:var(--muted);transition:all 0.3s}
+.sd.active{border-color:var(--accent);color:var(--accent);background:rgba(91,143,249,0.1)}
+.sd.done{border-color:var(--green);background:var(--green);color:#000}
+.sl{font-family:var(--mono);font-size:7px;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;text-align:center}
+.sln{flex:1;height:1px;background:var(--border2);margin-bottom:18px;transition:background 0.3s}
+.sln.done{background:var(--green)}
+.slabel{font-family:var(--mono);font-size:9px;letter-spacing:0.15em;color:var(--muted);text-transform:uppercase;padding:0 2px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.frow{display:flex;align-items:center;padding:0 14px;min-height:52px;border-bottom:1px solid var(--border);gap:10px;position:relative;cursor:pointer;transition:background 0.15s}
+.frow:last-child{border-bottom:none}
+.frow:hover{background:rgba(255,255,255,0.03)}
+.frow.na{cursor:default}
+.frow.na:hover{background:transparent}
+.ficon{font-size:16px;flex-shrink:0;width:22px;text-align:center}
+.fc{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.flbl{font-size:9px;font-family:var(--mono);color:var(--muted);letter-spacing:0.1em;text-transform:uppercase}
+.fv{font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fv.ph{color:var(--muted);font-weight:400;font-size:13px}
+.farw{font-size:10px;color:var(--muted2);flex-shrink:0}
+input[type="date"].nd{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;font-size:16px;z-index:2}
+.pblk{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:border-color 0.2s;margin-bottom:10px}
+.pblk.filled{border-color:rgba(39,217,138,0.4)}
+.pblk.skipped{border-color:var(--border);opacity:0.6}
+.pblk-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border)}
+.pblk-title{font-size:13px;font-weight:600}
+.pbadge{font-family:var(--mono);font-size:9px;padding:3px 9px;border-radius:20px;border:1px solid var(--border2);color:var(--muted)}
+.pbadge.ok{border-color:rgba(39,217,138,0.4);color:var(--green);background:rgba(39,217,138,0.08)}
+.pbadge.dl{border-color:rgba(240,92,92,0.4);color:var(--red);background:rgba(240,92,92,0.08)}
+.topts{display:grid;gap:8px;padding:12px 14px}
+.topt{padding:12px 10px;border-radius:10px;border:2px solid var(--border2);text-align:center;cursor:pointer;transition:all 0.2s;font-family:var(--mono);font-size:11px;letter-spacing:0.06em;color:var(--muted2)}
+.topt:active{transform:scale(0.97)}
+.topt.yes{border-color:var(--green);background:rgba(39,217,138,0.1);color:var(--green)}
+.topt.no{border-color:var(--red);background:rgba(240,92,92,0.1);color:var(--red)}
+.topt.ship{border-color:var(--accent);background:rgba(91,143,249,0.1);color:var(--accent)}
+.dfield{display:flex;align-items:center;padding:0 14px;min-height:50px;border-top:1px solid var(--border);gap:10px;position:relative;cursor:pointer}
+.dfield:hover{background:rgba(255,255,255,0.03)}
+.qdrow{display:flex;gap:5px;flex-wrap:wrap;padding:8px 14px 0}
+.qd{font-family:var(--mono);font-size:10px;padding:5px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted2);cursor:pointer;transition:all 0.12s}
+.qd:active{transform:scale(0.95)}
+.qd.active{background:rgba(91,143,249,0.15);border-color:var(--accent);color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px}
+.chip{padding:7px 12px;border-radius:20px;border:1px solid var(--border2);font-size:12px;color:var(--muted2);cursor:pointer;transition:all 0.15s;background:var(--bg3)}
+.chip:active{transform:scale(0.96)}
+.chip.active{border-color:var(--amber);background:rgba(245,166,35,0.1);color:var(--amber)}
+.tawrap{padding:10px 14px;border-top:1px solid var(--border)}
+textarea.ta{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--sans);font-size:13px;resize:none;min-height:50px;line-height:1.6}
+textarea.ta::placeholder{color:var(--muted)}
+.cfcard{background:rgba(91,143,249,0.05);border:1px solid rgba(91,143,249,0.25);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px}
+.cftitle{font-family:var(--mono);font-size:10px;letter-spacing:0.15em;color:var(--accent);text-transform:uppercase}
+.crow{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px}
+.ck{font-size:12px;color:var(--muted2)}
+.cv{font-size:12px;font-weight:600;color:var(--text);text-align:right;max-width:60%}
+.csep{height:1px;background:rgba(91,143,249,0.15);margin:4px 0}
+.subwrap{position:fixed;bottom:0;left:0;right:0;padding:10px 14px;padding-bottom:max(18px,env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 30%);z-index:50}
+.subbtn{width:100%;max-width:480px;margin:0 auto;display:block;padding:16px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:0.1em;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 20px rgba(91,143,249,0.28)}
+.subbtn:active{transform:scale(0.98)}
+.subbtn:disabled{background:var(--bg3);color:var(--muted);box-shadow:none;cursor:not-allowed}
+.subbtn.loading{background:var(--amber)}
+.subbtn.fail{background:var(--red)}
+.sucscreen{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:14px;text-align:center}
+.sucscreen.gone{display:none}
+.sucicon{font-size:60px;animation:pop 0.4s cubic-bezier(0.34,1.56,0.64,1)}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+.suctitle{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--green)}
+.sucsub{font-size:13px;color:var(--muted2);line-height:1.6;max-width:300px}
+.sucdetail{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 18px;width:100%;max-width:360px;font-size:12px;color:var(--muted2);text-align:left;line-height:2.2}
+.newbtn{padding:13px 28px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;font-family:var(--mono);font-size:11px;color:var(--muted2);cursor:pointer;transition:all 0.2s}
+.newbtn:hover{border-color:var(--accent);color:var(--accent)}
+.toast{position:fixed;top:58px;left:50%;transform:translateX(-50%) translateY(-12px);background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-family:var(--mono);font-size:11px;opacity:0;transition:all 0.25s;z-index:600;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:var(--green);color:var(--green);background:rgba(39,217,138,0.08)}
+.toast.err{border-color:var(--red);color:var(--red);background:rgba(240,92,92,0.08)}
+.toast.warn{border-color:var(--amber);color:var(--amber);background:rgba(245,166,35,0.08)}
+.cdlist{position:fixed;left:0;right:0;bottom:0;background:var(--bg2);border-top:1px solid var(--border2);border-radius:20px 20px 0 0;z-index:400;max-height:65vh;overflow-y:auto;transform:translateY(100%);transition:transform 0.28s cubic-bezier(0.32,0.72,0,1);padding-bottom:max(16px,env(safe-area-inset-bottom))}
+.cdlist.open{transform:translateY(0)}
+.cdhandle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 8px}
+.cdtitle{font-family:var(--mono);font-size:9px;letter-spacing:0.15em;color:var(--muted);text-transform:uppercase;padding:4px 18px 12px;border-bottom:1px solid var(--border)}
+.cditem{padding:15px 18px;font-size:14px;font-weight:500;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.cditem:last-child{border-bottom:none}
+.cditem:active{background:rgba(91,143,249,0.1)}
+.cditem.sel{color:var(--accent)}
+.cditem.sel::after{content:"checkmark";font-size:0;color:var(--accent)}
+.cditem.sel::after{content:"✓";font-size:13px}
+.cdov{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:399;opacity:0;transition:opacity 0.28s;pointer-events:none}
+.cdov.open{opacity:1;pointer-events:all}
+.note{font-family:var(--mono);font-size:9px;color:var(--muted);padding:2px 2px 6px;line-height:1.6}
+</style>
+</head>
+<body class="light">
+<div class="toast" id="toast"></div>
+
+<div class="pin-screen" id="pin-screen">
+  <div class="pin-badge">Merchant Portal</div>
+  <div class="pin-logo">PCS <b>CHAMPO</b></div>
+  <div class="pin-sub">Enter your 4-digit PIN to continue</div>
+  <div class="pin-card">
+    <div style="font-size:13px;color:var(--muted2)">Your PIN</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pkpad">
+      <div class="pk" onclick="pk(1)">1</div><div class="pk" onclick="pk(2)">2</div><div class="pk" onclick="pk(3)">3</div>
+      <div class="pk" onclick="pk(4)">4</div><div class="pk" onclick="pk(5)">5</div><div class="pk" onclick="pk(6)">6</div>
+      <div class="pk" onclick="pk(7)">7</div><div class="pk" onclick="pk(8)">8</div><div class="pk" onclick="pk(9)">9</div>
+      <div class="pk del" onclick="pkDel()">&#9003;</div><div class="pk z" onclick="pk(0)">0</div>
+    </div>
+    <div class="pin-err" id="pin-err"></div>
+  </div>
+</div>
+
+<div class="sucscreen gone" id="suc-screen">
+  <div class="sucicon">&#9989;</div>
+  <div class="suctitle">Update Submitted</div>
+  <div class="sucsub">Recorded in the production sheet.</div>
+  <div class="sucdetail" id="suc-detail"></div>
+  <button class="newbtn" onclick="resetAll()">+ Submit Another Update</button>
+</div>
+
+<div class="hdr">
+  <div><div class="hdr-tag">Merchant Portal</div><div class="hdr-title">PCS <b>CHAMPO</b></div></div>
+  <div class="mpill gone" id="mpill" onclick="lockOut()">
+    <span>&#127970;</span><span id="h-merchant">-</span>
+    <span style="font-size:9px;opacity:0.6">Sign out</span>
+  </div>
+</div>
+
+<div class="wrap">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:2px">
+    <button id="back-btn" class="hidden" onclick="goBack()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--muted2);font-size:12px;padding:6px 12px;cursor:pointer;font-family:var(--mono);white-space:nowrap;flex-shrink:0">Back</button>
+    <div class="steps" style="flex:1">
+      <div class="si"><div class="sd active" id="sd1">1</div><div class="sl">PO</div></div>
+      <div class="sln" id="sln1"></div>
+      <div class="si"><div class="sd" id="sd2">2</div><div class="sl">Update</div></div>
+      <div class="sln" id="sln2"></div>
+      <div class="si"><div class="sd" id="sd3">3</div><div class="sl">Confirm</div></div>
+    </div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div id="step1">
+    <div class="slabel" style="margin-bottom:8px">Select Buyer and PO</div>
+    <div class="card">
+      <div class="frow" onclick="openDrop('buyer')">
+        <div class="ficon">&#127970;</div>
+        <div class="fc"><div class="flbl">Buyer</div><div class="fv ph" id="v-buyer">Tap to select</div></div>
+        <div class="farw">&#9660;</div>
+      </div>
+      <div class="frow" onclick="openDrop('po')">
+        <div class="ficon">&#128230;</div>
+        <div class="fc"><div class="flbl">Purchase Order</div><div class="fv ph" id="v-po">Select buyer first</div></div>
+        <div class="farw">&#9660;</div>
+      </div>
+      <div class="frow na">
+        <div class="ficon">&#127991;</div>
+        <div class="fc"><div class="flbl">SKUs</div><div class="fv ph" id="v-sku" style="white-space:normal;font-size:11px;line-height:1.5">-</div></div>
+      </div>
+      <div class="frow na hidden" id="frow-cat">
+        <div class="ficon">&#127991;</div>
+        <div class="fc"><div class="flbl">H&amp;M Category</div><div class="fv" id="v-cat">-</div></div>
+      </div>
+      <div class="frow na">
+        <div class="ficon">&#128674;</div>
+        <div class="fc"><div class="flbl">Ship Window</div><div class="fv ph" id="v-ship">-</div></div>
+      </div>
+      <div class="frow na" id="frow-exfac" style="display:none">
+        <div class="ficon">&#9203;</div>
+        <div class="fc"><div class="flbl">Ex-Factory Deadline (dispatch by)</div><div class="fv" id="v-exfac" style="color:var(--amber)">-</div></div>
+      </div>
+    </div>
+    <div id="po-status-wrap" class="hidden">
+      <div class="slabel" style="margin:12px 0 8px">Current Process Status</div>
+      <div id="po-status-list"></div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div id="step2" class="hidden">
+    <div class="slabel" style="margin-bottom:4px">Update for PO <span id="s2-po" style="color:var(--accent)"></span></div>
+    <div class="note">Fill Testing if applicable, then Final Inspection and Dispatch status.</div>
+    <div id="proc-blocks"></div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div id="step3" class="hidden">
+    <div class="slabel" style="margin-bottom:8px">Review and Submit</div>
+    <div class="cfcard">
+      <div class="cftitle">Check before submitting</div>
+      <div class="crow"><span class="ck">Merchant</span><span class="cv" id="cf-merchant">-</span></div>
+      <div class="crow"><span class="ck">PO</span><span class="cv" id="cf-po">-</span></div>
+      <div class="csep"></div>
+      <div id="cf-lines"></div>
+    </div>
+  </div>
+</div>
+
+<div class="cdov" id="cdov" onclick="closeDrop()"></div>
+<div class="cdlist" id="cdlist">
+  <div class="cdhandle"></div>
+  <div class="cdtitle" id="cdtitle"></div>
+  <div id="cditems"></div>
+</div>
+
+<div class="subwrap">
+  <button class="subbtn" id="subbtn" onclick="nextStep()" disabled>SELECT PO FIRST</button>
+</div>
+
+<script>
+var SHEET_ID='1kd4Xm0DBwRLL7x6CRQmYIczpivqtmXhZIkmBzqMLjd4';
+var API_KEY='AIzaSyCQ2IAWSR-cwdxqaxvBlfhwBHUiueu8vmo';
+var WEB_APP_URL='https://script.google.com/macros/s/AKfycbzOt6NgZHdCGREJw9U1Bc-pZrmndzAoFkluqVJXh6IVULBOOICn_9F3Eh9hHy-Glewt/exec';
+var WEB_APP_PW='pcs2025champo';
+var MERCHANTS={'2001':'Merchant'};
+var SHIP_REASONS=['Freight booking delay','Documentation not ready','Buyer hold','Quality hold','Customs issue','Partial shipment pending','Other'];
+var merchantName=null,sheetData=[],masterOrders=[];
+var step=1,selBuyer=null,selPO=null,pinBuffer='',dropCtx=null;
+var dropData={buyer:[],po:[]};
+var PS={testing:{req:null,date:'',delayed:false,delayDays:0,delayReason:''},fi:{done:null,date:'',delayDays:0,delayReason:''},dispatch:{done:null,date:'',days:0,reason:'',notes:''}};
+
+async function wa(body){
+  await fetch(WEB_APP_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(Object.assign({},body,{password:WEB_APP_PW}))});
+  await new Promise(function(r){setTimeout(r,80)});
+  return{ok:true};
+}
+async function waAll(bodies){ await Promise.all(bodies.map(function(b){return wa(b)})); }
+
+function pk(n){
+  if(pinBuffer.length>=4)return;
+  pinBuffer+=String(n);rdots();
+  if(pinBuffer.length===4)setTimeout(chkPin,150);
+}
+function pkDel(){pinBuffer=pinBuffer.slice(0,-1);rdots();document.getElementById('pin-err').textContent='';document.querySelectorAll('.pin-dot').forEach(function(d){d.classList.remove('error')});}
+function rdots(){for(var i=0;i<4;i++)document.getElementById('pd'+i).className='pin-dot'+(i<pinBuffer.length?' filled':'');}
+function chkPin(){
+  var m=MERCHANTS[pinBuffer];
+  if(m){
+    merchantName=m;
+    document.getElementById('pin-screen').classList.add('gone');
+    document.getElementById('mpill').classList.remove('gone');
+    document.getElementById('h-merchant').textContent=m;
+    loadData();
+  } else {
+    document.getElementById('pin-err').textContent='Wrong PIN. Try again.';
+    document.querySelectorAll('.pin-dot').forEach(function(d){d.classList.add('error')});
+    setTimeout(function(){pinBuffer='';rdots();document.getElementById('pin-err').textContent='';document.querySelectorAll('.pin-dot').forEach(function(d){d.classList.remove('error')});},800);
+  }
+}
+function lockOut(){
+  if(!confirm('Sign out?'))return;
+  merchantName=null;pinBuffer='';rdots();
+  document.getElementById('mpill').classList.add('gone');
+  document.getElementById('pin-screen').classList.remove('gone');
+}
+
+async function loadMerchants(){
+  try{
+    var r=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent('MERCHANT_CONFIG!A:C')+'?key='+API_KEY);
+    if(!r.ok)return;
+    var rows=((await r.json()).values||[]);
+    var tmp={};
+    rows.slice(1).forEach(function(row){
+      var pin=(row[0]||'').trim(),name=(row[1]||'').trim(),active=(row[2]||'YES').trim().toUpperCase();
+      if(pin&&name&&active==='YES')tmp[pin]=name;
+    });
+    if(Object.keys(tmp).length>0)MERCHANTS=tmp;
+  }catch(e){}
+}
+
+async function loadData(){
+  try{
+    var r1=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent('PROCESS_TIMELINES!A:AH')+'?key='+API_KEY);
+    var r2=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent('MASTER_ORDERS!A:AH')+'?key='+API_KEY);
+    sheetData=parsePT((await r1.json()).values||[]).filter(function(r){return r.seq!==21});
+    masterOrders=parseMO((await r2.json()).values||[]);
+    popBuyers();goStep(1);
+  }catch(e){toast('Load error: '+e.message,'err');}
+}
+
+function parsePT(rows){
+  if(rows.length<2)return[];
+  var h=rows[0];function idx(n){return h.findIndex(function(x){return x===n});}
+  var I={SEQ:idx('Process_Seq'),PROC:idx('Process_Name'),APP:idx('Applicable'),
+    OWN:idx('Owner'),STAT:idx('Status'),PLANNED:idx('Planned_Date'),ACTUAL:idx('Actual_Date'),
+    PO_F:idx('PO_F'),BUYER_F:idx('Buyer_F'),PO:idx('PO'),BUYER:idx('Buyer'),CAT:idx('Category')};
+  return rows.slice(1).map(function(r,i){
+    return{row:i+2,po:r[I.PO_F]||r[I.PO]||'',buyer:r[I.BUYER_F]||r[I.BUYER]||'',
+      seq:parseInt(r[I.SEQ])||0,proc:r[I.PROC]||'',app:r[I.APP]||'NO',
+      status:r[I.STAT]||'',planned:r[I.PLANNED]||'',actual:r[I.ACTUAL]||''};
+  }).filter(function(r){return r.seq>0});
+}
+
+function parseMO(rows){
+  if(rows.length<2)return[];
+  var h=rows[0];function idx(n){return h.findIndex(function(x){return x===n});}
+  var I={PO:idx('PO'),BUYER:idx('Buyer'),SKU:idx('SKU'),COLOR:idx('Color'),SIZE:idx('Size'),
+    QTY:idx('Order_Qty'),SS:idx('Ship_Start'),SE:idx('Ship_End'),
+    CAT:idx('Category'),STATUS:idx('PO_Status'),MERCHANT:idx('Merchant')};
+  return rows.slice(1).map(function(r,i){
+    return{moRow:i+2,po:String(r[I.PO]||'').trim(),buyer:String(r[I.BUYER]||'').trim(),
+      sku:String(r[I.SKU]||'').trim(),color:String(r[I.COLOR]||'').trim(),
+      size:String(r[I.SIZE]||'').trim(),shipStart:String(r[I.SS]||'').trim(),
+      shipEnd:String(r[I.SE]||'').trim(),category:String(r[I.CAT]||'').trim(),
+      poStatus:String(r[I.STATUS]||'').trim(),merchant:String(r[I.MERCHANT]||'').trim()};
+  }).filter(function(r){return r.po&&r.poStatus!=='SHIPPED'&&r.merchant===merchantName});
+}
+
+function popBuyers(){
+  var seen={},buyers=[];
+  masterOrders.forEach(function(r){if(r.buyer&&!seen[r.buyer]){seen[r.buyer]=true;buyers.push(r.buyer);}});
+  dropData.buyer=buyers.sort().map(function(b){return{val:b,label:b}});
+}
+
+function onBuyerPick(b){
+  selBuyer=b;selPO=null;
+  sv('v-buyer',b);sv('v-po','Select PO',true);sv('v-sku','-',true);sv('v-ship','-',true);
+  document.getElementById('po-status-wrap').classList.add('hidden');
+  document.getElementById('frow-cat').classList.add('hidden');
+  var pos={};
+  masterOrders.filter(function(r){return r.buyer===b}).forEach(function(r){pos[r.po]=true});
+  dropData.po=Object.keys(pos).sort().map(function(p){return{val:p,label:p}});
+  updBtn();
+}
+
+function onPOPick(po){
+  selPO=po;sv('v-po',po);
+  var rows=masterOrders.filter(function(r){return r.po===po});
+  var seen={},skuLines=[];
+  rows.forEach(function(r){var k=[r.sku,r.color,r.size].filter(Boolean).join(' - ');if(!seen[k]){seen[k]=true;skuLines.push(k);}});
+  var el=document.getElementById('v-sku');
+  el.innerHTML=skuLines.map(function(l){return'<div style="padding:1px 0">'+l+'</div>'}).join('');
+  el.className='fv';
+  var r0=rows[0];
+  sv('v-ship',r0&&r0.shipStart&&r0.shipEnd?r0.shipStart+' to '+r0.shipEnd:'-',!(r0&&r0.shipStart));
+  var exFacEl=document.getElementById('frow-exfac');var exFacV=document.getElementById('v-exfac');
+  if(r0&&r0.shipEnd){var exDate=parseSheetDate(r0.shipEnd);if(exDate){exDate.setDate(exDate.getDate()-3);var dLeft=Math.round((exDate-new Date())/86400000);var urgColor=dLeft<0?'var(--red)':dLeft<=7?'var(--amber)':'var(--green)';exFacV.textContent=fmtFull(exDate)+(dLeft<0?' ('+Math.abs(dLeft)+'d overdue)':dLeft===0?' (TODAY)':' ('+dLeft+'d left)');exFacV.style.color=urgColor;exFacEl.style.display='';}}else{exFacEl.style.display='none';}
+  if(r0&&r0.category&&r0.buyer==='H&M'){
+    document.getElementById('v-cat').textContent=r0.category;
+    document.getElementById('frow-cat').classList.remove('hidden');
+  }
+  renderPOStatus(po);
+  document.getElementById('po-status-wrap').classList.remove('hidden');
+  try{var saved=localStorage.getItem('pcs_mf_'+po);if(saved){var parsed=JSON.parse(saved);if(parsed&&typeof parsed==='object'){PS=Object.assign({testing:{req:null,date:'',delayed:false,delayDays:0,delayReason:''},fi:{done:null,date:'',delayDays:0,delayReason:''},dispatch:{done:null,date:'',days:0,reason:'',notes:''}},parsed);toast('Previous entry restored','ok');}}}catch(e){}
+  // [FI PRE-FILL] If Jayant already filled FI date in owner form, pre-populate merchant FI
+  if(!PS.fi.date){
+    var fiSheetRow=sheetData.find(function(r){return r.po===po&&r.seq===20&&r.app==='YES'&&r.actual;});
+    if(fiSheetRow&&fiSheetRow.actual){
+      try{
+        var fiD=parseSheetDate(fiSheetRow.actual);
+        var fiISO=toISO(fiD);
+        PS.fi.done=true;
+        PS.fi.date=fiISO;
+        savePS();
+        toast('FI date pre-filled from sheet','ok');
+      }catch(e){}
+    }
+  }
+  updBtn();
+}
+
+function renderPOStatus(po){
+  var checks=[{seq:17,label:'Testing'},{seq:20,label:'Final Inspection'}];
+  var html=checks.map(function(c){
+    var row=sheetData.find(function(r){return r.po===po&&r.seq===c.seq&&r.app==='YES'});
+    if(!row)return'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:13px;font-weight:600">'+c.label+'</span><span style="font-family:var(--mono);font-size:9px;padding:3px 9px;border-radius:20px;border:1px solid var(--border2);color:var(--muted)">N/A</span></div>';
+    var sc=row.status==='COMPLETE'?'border-color:rgba(39,217,138,0.4);color:var(--green);background:rgba(39,217,138,0.08)':row.status==='DELAY'?'border-color:rgba(240,92,92,0.4);color:var(--red);background:rgba(240,92,92,0.08)':'border-color:rgba(91,143,249,0.3);color:var(--accent)';
+    return'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:6px"><div style="padding:11px 14px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:600">'+c.label+'</span><span style="font-family:var(--mono);font-size:9px;padding:3px 9px;border-radius:20px;border:1px solid;'+sc+'">'+(row.status||'Pending')+'</span></div>'+(row.planned?'<div style="padding:0 14px 9px;font-size:10px;color:var(--muted);font-family:var(--mono)">Due: '+row.planned+'</div>':'')+'</div>';
+  }).join('');
+  document.getElementById('po-status-list').innerHTML=html;
+}
+
+function renderBlocks(){
+  var testRow=sheetData.find(function(r){return r.po===selPO&&r.seq===17&&r.app==='YES'});
+  var fiRow=sheetData.find(function(r){return r.po===selPO&&r.seq===20&&r.app==='YES'});
+  document.getElementById('proc-blocks').innerHTML=blkTesting(testRow)+blkFI(fiRow)+blkDispatch();
+}
+
+function blkTesting(row){
+  var s=PS.testing;
+  var curStat=row?(row.status||'Pending'):'Not in sheet';
+  var planned=row?row.planned:'';
+  var badge=s.req===null?'Not filled':s.req===false?'SKIPPED':s.date?fmtShort(new Date(s.date+'T00:00:00')):'Date needed';
+  var bc=s.req===false?'dl':s.req&&s.date?'ok':'';
+  return '<div class="pblk'+(s.req===false?' skipped':s.req&&s.date?' filled':'')+'" id="blk-t">'+
+    '<div class="pblk-hdr"><span class="pblk-title">1. Testing</span><span class="pbadge '+bc+'">'+badge+'</span></div>'+
+    '<div style="padding:8px 14px 2px;font-size:11px;color:var(--muted2)">Sheet: <strong>'+curStat+'</strong>'+(planned?' - Due: '+planned:'')+'</div>'+
+    '<div style="padding:2px 14px 4px;font-size:11px;color:var(--muted)">Was testing done / required for this PO?</div>'+
+    '<div class="topts" style="grid-template-columns:1fr 1fr 1fr">'+
+      '<div class="topt'+(PS.testing.req===true&&!PS.testing.delayed?' yes':'')+'" onclick="setTR(PS.testing.req===true&&!PS.testing.delayed?null:true)">&#10003; DONE</div>'+
+      '<div class="topt'+(PS.testing.delayed?' no':'')+'" onclick="setTRDelayed()">&#9888; DELAYED</div>'+
+      '<div class="topt'+(PS.testing.req===false?' no':'')+'" onclick="setTR(PS.testing.req===false?null:false)">NOT REQD</div>'+
+    '</div>'+
+    (s.req===true&&!s.delayed?
+      '<div class="qdrow">'+qdHTML('t')+'</div>'+
+      '<div class="dfield" onclick="opk(\'dp-t\')">'+
+        '<div class="ficon">&#128197;</div>'+
+        '<div class="fc"><div class="flbl">Testing Completion Date</div><div class="fv'+(s.date?'':' ph')+'" id="dv-t">'+(s.date?fmtFull(new Date(s.date+'T00:00:00')):'Tap to pick')+'</div></div>'+
+        '<div class="farw">&#9660;</div>'+
+        '<input type="date" id="dp-t" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;font-size:16px" value="'+(s.date||'')+'" onchange="onDP(\'t\',this.value)">'+
+      '</div>'
+    :s.delayed?
+      '<div style="padding:6px 14px 2px;font-size:11px;color:var(--muted)">Days delayed:</div>'+
+      '<div style="padding:4px 14px 8px;display:flex;gap:6px;flex-wrap:wrap">'+
+        [1,2,3,5,7].map(function(n){return'<div class="qd'+(s.delayDays===n?' active':'')+'" onclick="setTDays('+n+')">'+n+'d</div>';}).join('')+
+      '</div>'+
+      '<div style="padding:0 14px 4px;font-size:11px;color:var(--muted)">Reason:</div>'+
+      '<div class="chips">'+
+        ['Quality hold','Lab test pending','Buyer hold','Re-test','Other'].map(function(r){return'<div class="chip'+(s.delayReason===r?' active':'')+'" onclick="setTReason(\''+ r.replace(/'/g,"\\'")+'\')">'+ r+'</div>';}).join('')+
+      '</div>'
+    :'')+
+  '</div>';
+}
+
+function blkFI(row){
+  var s=PS.fi;
+  var curStat=row?(row.status||'Pending'):'Not in sheet';
+  var planned=row?row.planned:'';
+  var badge=s.done===null?'Not filled':s.done===true&&s.date?fmtShort(new Date(s.date+'T00:00:00')):s.done==='delayed'?'DELAYED':'Date needed';
+  var bc=s.done==='delayed'?'dl':s.done===true&&s.date?'ok':'';
+  return '<div class="pblk'+(s.done===true&&s.date?' filled':s.done==='delayed'?' skipped':'')+' " id="blk-fi" style="margin-top:0">'+
+    '<div class="pblk-hdr"><span class="pblk-title">2. Final Inspection</span><span class="pbadge '+bc+'">'+badge+'</span></div>'+
+    '<div style="padding:8px 14px 2px;font-size:11px;color:var(--muted2)">Sheet: <strong>'+curStat+'</strong>'+(planned?' - Due: '+planned:'')+' </div>'+
+    '<div class="topts" style="grid-template-columns:1fr 1fr 1fr">'+
+      '<div class="topt'+(PS.fi.done===true&&PS.fi.done!=='delayed'?' yes':'')+' " onclick="setFI(PS.fi.done===true?null:true)">DONE</div>'+
+      '<div class="topt'+(PS.fi.done==='delayed'?' no':'')+' " onclick="setFIDelayed()">&#9888; DELAYED</div>'+
+      '<div class="topt'+(PS.fi.done===false?' no':'')+' " onclick="setFI(PS.fi.done===false?null:false)">NOT YET</div>'+
+    '</div>'+
+    (PS.fi.done===true&&PS.fi.done!=='delayed'?
+      '<div class="qdrow">'+qdHTML('fi')+'</div>'+
+      '<div class="dfield" onclick="opk(\'dp-fi\')">'+
+        '<div class="ficon">&#128197;</div>'+
+        '<div class="fc"><div class="flbl">FI Completion Date</div><div class="fv'+(s.date?'':' ph')+'" id="dv-fi">'+(s.date?fmtFull(new Date(s.date+'T00:00:00')):'Tap to pick')+'</div></div>'+
+        '<div class="farw">&#9660;</div>'+
+        '<input type="date" id="dp-fi" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;font-size:16px" value="'+(s.date||'')+' " onchange="onDP(\'fi\',this.value)">'+
+      '</div>'
+    :PS.fi.done==='delayed'?
+      '<div style="padding:6px 14px 2px;font-size:11px;color:var(--muted)">Days delayed:</div>'+
+      '<div style="padding:4px 14px 8px;display:flex;gap:6px;flex-wrap:wrap">'+
+        [1,2,3,5,7,10].map(function(n){return'<div class="qd'+(s.delayDays===n?' active':'')+' " onclick="setFIDays('+n+')">'+n+'d</div>';}).join('')+
+      '</div>'+
+      '<div style="padding:0 14px 4px;font-size:11px;color:var(--muted)">Reason:</div>'+
+      '<div class="chips">'+
+        ['Buyer not available','Quality issue','Documents pending','Re-inspection','Other'].map(function(r){return'<div class="chip'+(s.delayReason===r?' active':'')+' " onclick="setFIReason(\''+r.replace(/'/g,"\\'")+'\')">'+ r+'</div>';}).join('')+
+      '</div>'
+    :PS.fi.done===false?
+      '<div style="padding:6px 14px 10px;font-size:11px;color:var(--muted)">FI not yet done — will be logged as pending.</div>'
+    :'')+
+  '</div>';
+}
+
+function blkDispatch(){
+  var s=PS.dispatch;
+  var badge=s.done===null?'Not filled':s.done===true&&s.date?'Shipped '+fmtShort(new Date(s.date+'T00:00:00')):s.reason?'DELAYED':'Fill reason';
+  var bc=s.done===false&&s.reason?'dl':s.done===true&&s.date?'ok':'';
+  return '<div class="pblk'+(s.done===true&&s.date?' filled':s.done===false&&s.reason?' skipped':'')+' " id="blk-d">'+
+    '<div class="pblk-hdr"><span class="pblk-title">3. Dispatched from Factory?</span><span class="pbadge '+bc+'">'+badge+'</span></div>'+
+    '<div class="topts" style="grid-template-columns:1fr 1fr">'+
+      '<div class="topt'+(PS.dispatch.done===true?' ship':'')+' " onclick="setDS(PS.dispatch.done===true?null:true)">YES - SHIPPED</div>'+
+      '<div class="topt'+(PS.dispatch.done===false?' no':'')+' " onclick="setDS(PS.dispatch.done===false?null:false)">NOT YET</div>'+
+    '</div>'+
+    (PS.dispatch.done===true?
+      '<div class="qdrow">'+qdHTML('d')+'</div>'+
+      '<div class="dfield" onclick="opk(\'dp-d\')">'+
+        '<div class="ficon">&#128674;</div>'+
+        '<div class="fc"><div class="flbl">Dispatch Date</div><div class="fv'+(s.date?'':' ph')+'" id="dv-d">'+(s.date?fmtFull(new Date(s.date+'T00:00:00')):'Tap to pick')+'</div></div>'+
+        '<div class="farw">&#9660;</div>'+
+        '<input type="date" id="dp-d" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;font-size:16px" value="'+(s.date||'')+' " onchange="onDP(\'d\',this.value)">'+
+      '</div>'
+    :PS.dispatch.done===false?
+      '<div style="padding:8px 14px 2px;font-size:11px;color:var(--muted)">How many days delayed?</div>'+
+      '<div style="padding:4px 14px 10px;display:flex;gap:6px;flex-wrap:wrap">'+
+        [3,5,7,10,14,21,30].map(function(n){return'<div class="qd'+(s.days===n?' active':'')+' " onclick="setDD('+n+')">'+n+'d</div>';}).join('')+
+      '</div>'+
+      '<div style="padding:0 14px 4px;font-size:11px;color:var(--muted)">Reason:</div>'+
+      '<div class="chips">'+
+        SHIP_REASONS.map(function(r){return'<div class="chip'+(s.reason===r?' active':'')+' " onclick="setDR(\''+r.replace(/'/g,"\\'")+'\')">'+ r+'</div>';}).join('')+
+      '</div>'+
+      '<div class="tawrap">'+
+        '<div style="font-size:9px;font-family:var(--mono);color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:5px">Additional Notes</div>'+
+        '<textarea class="ta" id="ta-dispatch" rows="2" placeholder="Details..." oninput="PS.dispatch.notes=this.value">'+(s.notes||'')+'</textarea>'+
+      '</div>'
+    :'')+
+  '</div>';
+}
+
+function qdHTML(which){
+  var labels=['Today','-1d','-2d','-3d','-5d','-7d'];
+  var offsets=[0,-1,-2,-3,-5,-7];
+  var cur=which==='t'?PS.testing.date:which==='fi'?PS.fi.date:PS.dispatch.date;
+  return offsets.map(function(n,i){
+    var d=new Date();d.setDate(d.getDate()+n);
+    var iso=toISO(d);
+    return'<div class="qd'+(cur===iso?' active':'')+'" onclick="setQD(\''+which+'\','+n+')">'+labels[i]+'</div>';
+  }).join('');
+}
+
+function savePS(){if(selPO)try{localStorage.setItem('pcs_mf_'+selPO,JSON.stringify(PS));}catch(e){}}
+function setTRDelayed(){setTR(PS.testing.delayed?null:'delayed');}
+function setTR(v){if(v===null){PS.testing.req=null;PS.testing.delayed=false;PS.testing.date='';PS.testing.delayDays=0;PS.testing.delayReason='';}else if(v==='delayed'){PS.testing.delayed=true;PS.testing.req=true;PS.testing.date='';}else{PS.testing.req=v;PS.testing.delayed=false;if(!v){PS.testing.date='';PS.testing.delayDays=0;PS.testing.delayReason='';}}savePS();renderBlocks();updBtn();}
+function setTDays(n){PS.testing.delayDays=n;savePS();renderBlocks();updBtn();}
+function setTReason(r){PS.testing.delayReason=r;savePS();renderBlocks();updBtn();}
+function setFIDelayed(){setFI(PS.fi.done==='delayed'?null:'delayed');}
+function setFI(v){if(v===null){PS.fi.done=null;PS.fi.date='';PS.fi.delayDays=0;PS.fi.delayReason='';}else if(v==='delayed'){PS.fi.done='delayed';PS.fi.date='';PS.fi.delayDays=0;PS.fi.delayReason='';}else{PS.fi.done=v;if(!v){PS.fi.date='';PS.fi.delayDays=0;PS.fi.delayReason='';}}savePS();renderBlocks();updBtn();}
+function setFIDays(n){PS.fi.delayDays=n;savePS();renderBlocks();updBtn();}
+function setFIReason(r){PS.fi.delayReason=r;savePS();renderBlocks();updBtn();}
+function setDS(v){
+  if(v===null){PS.dispatch.done=null;PS.dispatch.date='';PS.dispatch.days=0;PS.dispatch.reason='';PS.dispatch.notes='';}
+  else{PS.dispatch.done=v;if(v){PS.dispatch.days=0;PS.dispatch.reason='';PS.dispatch.notes='';}else{PS.dispatch.date='';}}
+  savePS();renderBlocks();updBtn();
+}
+function setDD(n){PS.dispatch.days=n;renderBlocks();updBtn();}
+function setDR(r){
+  var ta=document.getElementById('ta-dispatch');
+  if(ta)PS.dispatch.notes=ta.value;
+  PS.dispatch.reason=r;renderBlocks();updBtn();
+}
+function onDP(w,v){
+  if(!v)return;
+  if(w==='t')PS.testing.date=v;
+  else if(w==='fi')PS.fi.date=v;
+  else PS.dispatch.date=v;
+  savePS();renderBlocks();updBtn();
+}
+function setQD(w,n){
+  var d=new Date();d.setDate(d.getDate()+n);var iso=toISO(d);
+  if(w==='t')PS.testing.date=iso;
+  else if(w==='fi')PS.fi.date=iso;
+  else PS.dispatch.date=iso;
+  renderBlocks();updBtn();
+}
+
+function goStep(n){
+  step=n;
+  document.getElementById('step1').classList.toggle('hidden',n!==1);
+  document.getElementById('step2').classList.toggle('hidden',n!==2);
+  document.getElementById('step3').classList.toggle('hidden',n!==3);
+  for(var i=1;i<=3;i++){
+    document.getElementById('sd'+i).className='sd'+(i<n?' done':i===n?' active':'');
+    if(i<3)document.getElementById('sln'+i).className='sln'+(i<n?' done':'');
+  }
+  document.getElementById('back-btn').classList.toggle('hidden',n===1);
+  window.scrollTo({top:0,behavior:'smooth'});
+  updBtn();
+}
+function goBack(){if(step===2)goStep(1);else if(step===3)goStep(2);}
+
+function nextStep(){
+  if(step===1){
+    if(!selPO){toast('Select PO first','warn');return;}
+    PS={testing:{req:null,date:'',delayed:false,delayDays:0,delayReason:''},fi:{done:null,date:'',delayDays:0,delayReason:''},dispatch:{done:null,date:'',days:0,reason:'',notes:''}};
+    document.getElementById('s2-po').textContent=selPO;
+    renderBlocks();goStep(2);return;
+  }
+  if(step===2){
+    var s=PS;
+    // Validate only what is filled — nothing is strictly required except completeness of chosen option
+    if(s.fi.done===true&&!s.fi.date){toast('Pick FI completion date','warn');return;}
+    if(s.fi.done==='delayed'&&(!s.fi.delayDays||!s.fi.delayReason)){toast('Fill FI delay details','warn');return;}
+    if(s.dispatch.done===true&&!s.dispatch.date){toast('Pick dispatch date','warn');return;}
+    if(s.dispatch.done===false&&!s.dispatch.reason){toast('Select delay reason for dispatch','warn');return;}
+    // At least one of the three must be filled
+    var anyFilled=(s.testing.req!==null)||(s.fi.done!==null)||(s.dispatch.done!==null);
+    if(!anyFilled){toast('Fill at least one status','warn');return;}
+    buildConfirm();goStep(3);return;
+  }
+  if(step===3){submitForm();return;}
+}
+
+function buildConfirm(){
+  document.getElementById('cf-merchant').textContent=merchantName;
+  document.getElementById('cf-po').textContent=selPO+' ('+selBuyer+')';
+  var s=PS,lines=[];
+  if(s.testing.req===false)lines.push({k:'Testing',v:'Not required - skipped'});
+  else if(s.testing.req&&s.testing.date)lines.push({k:'Testing',v:'Done - '+fmtShort(new Date(s.testing.date+'T00:00:00'))});
+  if(s.fi.done&&s.fi.date)lines.push({k:'Final Inspection',v:'Done - '+fmtShort(new Date(s.fi.date+'T00:00:00'))});
+  else if(s.fi.done===false)lines.push({k:'Final Inspection',v:'Delayed'+(s.fi.delayDays?' '+s.fi.delayDays+'d':'')+(s.fi.delayReason?' — '+s.fi.delayReason:'')});
+  if(s.dispatch.done&&s.dispatch.date)lines.push({k:'Dispatch',v:'Shipped - '+fmtShort(new Date(s.dispatch.date+'T00:00:00'))});
+  else if(s.dispatch.done===false)lines.push({k:'Dispatch',v:'Delayed '+s.dispatch.days+'d - '+s.dispatch.reason});
+  document.getElementById('cf-lines').innerHTML=lines.map(function(l){return'<div class="crow"><span class="ck">'+l.k+'</span><span class="cv">'+l.v+'</span></div>'}).join('');
+}
+
+async function submitForm(){
+  var btn=document.getElementById('subbtn');
+  btn.className='subbtn loading';btn.textContent='Submitting...';btn.disabled=true;
+  try{
+    var now=new Date();
+    var ts=now.toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    var s=PS,updates=[],calls=[];
+    var COL_ACT=14,COL_STAT=17,COL_PRED=30,COL_PREDC=31,COL_NOTE=32,COL_DELAY=15,COL_CAUSE=16;
+
+    // Testing
+    var testRows=sheetData.filter(function(r){return r.po===selPO&&r.seq===17&&r.app==='YES'});
+    if(s.testing.delayed&&s.testing.delayDays>0){
+      testRows.forEach(function(r){updates.push({sheet:'PROCESS_TIMELINES',row:r.row,col:COL_STAT,value:'DELAY'});updates.push({sheet:'PROCESS_TIMELINES',row:r.row,col:COL_DELAY,value:s.testing.delayDays});updates.push({sheet:'PROCESS_TIMELINES',row:r.row,col:COL_CAUSE,value:s.testing.delayReason||'Testing delayed'});updates.push({sheet:'PROCESS_TIMELINES',row:r.row,col:COL_NOTE,value:'Testing delayed '+s.testing.delayDays+'d | '+merchantName+' | '+ts});});
+    } else if(s.testing.req===true&&s.testing.date){
+      sheetData.filter(function(r){return r.po===selPO&&r.seq===17&&r.app==='YES'}).forEach(function(r){
+        updates.push({sheet:'PROCESS_TIMELINES',row:r.row,col:COL_ACT,value:fmtSheet(new Date(s.testing.date+'T00:00:00'))});
+        updates.push({sheet:'PROCESS_TIMELINES',row:r.row,col:COL_STAT,value:'COMPLETE'});
+        updates.push({sheet:'PROCESS_TIMELINES',row:r.row,col:COL_NOTE,value:'Updated: '+merchantName+' | '+ts});
+      });
+    }
+
+    // FI
+    var fiRows=sheetData.filter(function(r){return r.po===selPO&&r.seq===20&&r.app==='YES'});
+    if(s.fi.done===true&&s.fi.date){
+      fiRows.forEach(function(r){
+        updates.push({sheet:'PROCESS_TIMELINES',row:r.row,col:COL_ACT,value:fmtSheet(new Date(s.fi.date+'T00:00:00'))});
+        updates.push({sheet:'PROCESS_TIMELINES',row:r.row,col:COL_STAT,value:'COMPLETE'});
+        updates.push({sheet:'PROCESS_TIMELINES',row:r.row,col:COL_NOTE,value:'Updated: '+merchantName+' | '+ts});
+      });
+    } else if(s.fi.done===false){
+      fiRows.forEach(function(r){
+        updates.push({sheet:'PROCESS_TIMELINES',row:r.row,col:COL_STAT,value:'DELAY'});
+        if(s.fi.delayDays>0)updates.push({sheet:'PROCESS_TIMELINES',row:r.row,col:COL_DELAY,value:s.fi.delayDays});
+        if(s.fi.delayReason)updates.push({sheet:'PROCESS_TIMELINES',row:r.row,col:COL_CAUSE,value:s.fi.delayReason});
+        updates.push({sheet:'PROCESS_TIMELINES',row:r.row,col:COL_NOTE,value:'FI delayed'+(s.fi.delayDays?' '+s.fi.delayDays+'d':'')+' | '+merchantName+' | '+ts});
+      });
+    }
+
+    // Dispatch
+    if(s.dispatch.done===true&&s.dispatch.date){
+      calls.push({action:'markShipped',po:selPO,shippedDate:fmtSheet(new Date(s.dispatch.date+'T00:00:00')),shippedBy:merchantName});
+    }
+
+    var logRow=[ts,merchantName,selPO,selBuyer,
+      s.testing.req===false?'SKIP':(s.testing.req&&s.testing.date?s.testing.date:''),
+      s.fi.done&&s.fi.date?s.fi.date:s.fi.done===false?'DELAYED':'',
+      s.dispatch.done?s.dispatch.date:'DELAYED',
+      s.dispatch.done===false?s.dispatch.days+'d - '+s.dispatch.reason+(s.dispatch.notes?' - '+s.dispatch.notes:''):''
+    ];
+
+    if(updates.length)calls.push({action:'writeCells',updates:updates});
+    calls.push({action:'appendRow',sheet:'MERCHANT_LOG',values:logRow});
+    await waAll(calls);
+
+    document.getElementById('suc-detail').innerHTML=
+      '<strong>'+merchantName+'</strong><br>'+
+      'PO: <strong>'+selPO+'</strong> ('+selBuyer+')<br>'+
+      (s.testing.req===false?'Testing: <strong>Skipped</strong><br>':s.testing.date?'Testing: <strong>Done '+fmtShort(new Date(s.testing.date+'T00:00:00'))+'</strong><br>':'')+
+      'FI: <strong>'+(s.fi.done&&s.fi.date?'Done '+fmtShort(new Date(s.fi.date+'T00:00:00')):'Delayed')+'</strong><br>'+
+      'Dispatch: <strong style="color:'+(s.dispatch.done?'var(--green)':'var(--red)')+'">'+
+      (s.dispatch.done&&s.dispatch.date?'Shipped '+fmtShort(new Date(s.dispatch.date+'T00:00:00')):'Delayed '+s.dispatch.days+'d')+'</strong>';
+    document.getElementById('suc-screen').classList.remove('gone');
+  }catch(e){
+    btn.className='subbtn fail';btn.textContent='Failed - tap to retry';btn.disabled=false;
+    toast('Error: '+e.message,'err');
+    setTimeout(function(){btn.className='subbtn';updBtn();},3000);
+  }
+}
+
+function resetAll(){
+  document.getElementById('suc-screen').classList.add('gone');
+  selPO=null;selBuyer=null;
+  PS={testing:{req:null,date:'',delayed:false,delayDays:0,delayReason:''},fi:{done:null,date:'',delayDays:0,delayReason:''},dispatch:{done:null,date:'',days:0,reason:'',notes:''}};
+  sv('v-buyer','Tap to select',true);sv('v-po','Select buyer first',true);
+  sv('v-sku','-',true);sv('v-ship','-',true);
+  document.getElementById('po-status-wrap').classList.add('hidden');
+  document.getElementById('frow-cat').classList.add('hidden');
+  goStep(1);
+}
+
+function updBtn(){
+  var btn=document.getElementById('subbtn');
+  if(step===1){btn.disabled=!selPO;btn.className='subbtn';btn.textContent=selPO?'Proceed to Update':'SELECT PO FIRST';return;}
+  if(step===2){
+    var s=PS;
+    // Each block: valid if not started, or fully completed
+    var fiOk=s.fi.done===null||(s.fi.done===true&&!!s.fi.date)||(s.fi.done==='delayed'&&s.fi.delayDays>0&&!!s.fi.delayReason)||(s.fi.done===false);
+    var dsOk=s.dispatch.done===null||(s.dispatch.done===true&&!!s.dispatch.date)||(s.dispatch.done===false&&!!s.dispatch.reason);
+    var anyFilled=(s.testing.req!==null)||(s.fi.done!==null)||(s.dispatch.done!==null);
+    var allOk=fiOk&&dsOk&&anyFilled;
+    btn.disabled=!allOk;btn.className='subbtn';
+    if(!anyFilled) btn.textContent='Fill at least one status';
+    else if(!fiOk) btn.textContent=s.fi.done===true?'Pick FI Date':'Fill FI delay details';
+    else if(!dsOk) btn.textContent=s.dispatch.done===true?'Pick dispatch date':'Select delay reason';
+    else btn.textContent='Review and Confirm';
+    return;
+  }
+  if(step===3){btn.disabled=false;btn.className='subbtn';btn.textContent='Submit Update';}
+}
+
+function openDrop(ctx){
+  if(ctx==='po'&&!selBuyer)return;
+  dropCtx=ctx;
+  var items=dropData[ctx];
+  if(!items||!items.length){toast('No POs assigned to you','warn');return;}
+  document.getElementById('cdtitle').textContent=ctx==='buyer'?'Buyer':'Purchase Order';
+  var curVal=ctx==='buyer'?selBuyer:selPO;
+  document.getElementById('cditems').innerHTML=items.map(function(item){
+    return'<div class="cditem'+(item.val===curVal?' sel':'')+'" onclick="pickItem(\''+ctx+'\',\''+item.val.replace(/'/g,"\\'")+'\')">'+ item.label+'</div>';
+  }).join('');
+  document.getElementById('cdov').classList.add('open');
+  document.getElementById('cdlist').classList.add('open');
+}
+function closeDrop(){
+  document.getElementById('cdov').classList.remove('open');
+  document.getElementById('cdlist').classList.remove('open');
+  dropCtx=null;
+}
+function pickItem(ctx,val){
+  closeDrop();
+  if(ctx==='buyer')onBuyerPick(val);
+  else onPOPick(val);
+}
+function opk(id){var el=document.getElementById(id);if(!el)return;try{el.showPicker();}catch(e){el.focus();}}
+function sv(id,t,ph){var el=document.getElementById(id);if(!el)return;el.textContent=t;el.className=ph?'fv ph':'fv';}
+function parseSheetDate(s){if(!s)return null;var m={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};var p=s.split('-');if(p.length===3&&isNaN(p[1])){var yr=parseInt(p[2])<50?2000+parseInt(p[2]):1900+parseInt(p[2]);return new Date(yr,m[p[1]],parseInt(p[0]));}var d=new Date(s);return isNaN(d)?null:d;}
+function fmtShort(d){return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});}
+function fmtFull(d){return d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});}
+function fmtSheet(d){return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).replace(/ /g,'-');}
+function toISO(d){return d.toISOString().split('T')[0];}
+function toast(msg,type){var el=document.getElementById('toast');el.textContent=msg;el.className='toast show '+(type||'');setTimeout(function(){el.className='toast';},2800);}
+function toggleTheme(){var l=document.body.classList.toggle('light');localStorage.setItem('pcs_theme',l?'light':'dark');document.getElementById('tbtn').textContent=l?'Moon':'Sun';}
+
+var _ty=0;
+document.getElementById('cdlist').addEventListener('touchstart',function(e){_ty=e.touches[0].clientY;},{passive:true});
+document.getElementById('cdlist').addEventListener('touchmove',function(e){if(e.touches[0].clientY-_ty>60)closeDrop();},{passive:true});
+window.addEventListener('keydown',function(e){
+  if(document.getElementById('pin-screen').classList.contains('gone'))return;
+  if(e.key>='0'&&e.key<='9')pk(parseInt(e.key));
+  else if(e.key==='Backspace')pkDel();
+});
+window.addEventListener('load',function(){
+  document.body.classList.add('light');
+  updBtn();loadMerchants();
+});
+</script>
+</body>
+</html>
